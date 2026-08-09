@@ -1,0 +1,16 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Dependency / workspace
+vendor/
+.idea/
+.vscode/
+*.swp
+
+.DS_Store

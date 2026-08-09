@@ -1,0 +1,138 @@
+// Copyright 2026 Actx0. All rights reserved.
+// License can be found in the LICENSE file.
+
+package gctx0
+
+import (
+	"context"
+	"net/http"
+)
+
+// Messages is the session message API client.
+type Messages struct {
+	Resource
+}
+
+// NewMessages creates a standalone messages client.
+func NewMessages(opts ...Option) *Messages {
+	return &Messages{Resource: newResource(opts...)}
+}
+
+// List returns session messages.
+func (m *Messages) List(ctx context.Context, agentID, sessionID string, limit, offset int) (*MessageList, error) {
+	params, err := buildQueryParams(QueryParams{Limit: intPtr(limit), Offset: intPtr(offset)})
+	if err != nil {
+		return nil, err
+	}
+	path, err := m.agentPath(agentID, "sessions", sessionID, "messages")
+	if err != nil {
+		return nil, err
+	}
+	var raw messageListResponse
+	if err := m.request(ctx, http.MethodGet, path, requestOptions{params: params}, &raw); err != nil {
+		return nil, err
+	}
+	return &MessageList{
+		Messages: raw.Messages,
+		Limit:    raw.Meta.Limit,
+		Offset:   raw.Meta.Offset,
+		Total:    raw.Meta.Total,
+	}, nil
+}
+
+// Get returns a message by ID.
+func (m *Messages) Get(ctx context.Context, agentID, sessionID, messageID string) (*Message, error) {
+	path, err := m.agentPath(agentID, "sessions", sessionID, "messages", messageID)
+	if err != nil {
+		return nil, err
+	}
+	var message Message
+	if err := m.request(ctx, http.MethodGet, path, requestOptions{}, &message); err != nil {
+		return nil, err
+	}
+	return &message, nil
+}
+
+// Search searches session messages.
+func (m *Messages) Search(ctx context.Context, agentID, sessionID, query string, limit int) (*MessageSearchResults, error) {
+	path, err := m.agentPath(agentID, "sessions", sessionID, "messages", "search")
+	if err != nil {
+		return nil, err
+	}
+	var results MessageSearchResults
+	if err := m.request(ctx, http.MethodPost, path, requestOptions{
+		json: map[string]any{"query": query, "limit": limit},
+	}, &results); err != nil {
+		return nil, err
+	}
+	return &results, nil
+}
+
+// Create creates one message.
+func (m *Messages) Create(ctx context.Context, agentID, sessionID string, message MessageInput) (*Message, error) {
+	path, err := m.agentPath(agentID, "sessions", sessionID, "messages")
+	if err != nil {
+		return nil, err
+	}
+	var created Message
+	if err := m.request(ctx, http.MethodPost, path, requestOptions{
+		json: encodeMessageItem(message),
+	}, &created); err != nil {
+		return nil, err
+	}
+	return &created, nil
+}
+
+// CreateBatch creates multiple messages.
+func (m *Messages) CreateBatch(ctx context.Context, agentID, sessionID string, messages []MessageInput) ([]Message, error) {
+	path, err := m.agentPath(agentID, "sessions", sessionID, "messages", "batch")
+	if err != nil {
+		return nil, err
+	}
+	var raw messageBatchResponse
+	if err := m.request(ctx, http.MethodPost, path, requestOptions{
+		json: BuildMessageBatchPayload(messages),
+	}, &raw); err != nil {
+		return nil, err
+	}
+	return raw.Messages, nil
+}
+
+// Update updates a message.
+func (m *Messages) Update(ctx context.Context, agentID, sessionID, messageID, content string, role MessageRole, meta map[string]any) (*Message, error) {
+	path, err := m.agentPath(agentID, "sessions", sessionID, "messages", messageID)
+	if err != nil {
+		return nil, err
+	}
+	fields := map[string]string{}
+	if role != "" {
+		fields["role"] = string(role)
+	}
+	var updated Message
+	if err := m.request(ctx, http.MethodPut, path, requestOptions{
+		json: encodeUpdateBody(content, meta, fields),
+	}, &updated); err != nil {
+		return nil, err
+	}
+	return &updated, nil
+}
+
+// Delete deletes one message.
+func (m *Messages) Delete(ctx context.Context, agentID, sessionID, messageID string) error {
+	path, err := m.agentPath(agentID, "sessions", sessionID, "messages", messageID)
+	if err != nil {
+		return err
+	}
+	return m.request(ctx, http.MethodDelete, path, requestOptions{}, nil)
+}
+
+// DeleteBatch deletes multiple messages.
+func (m *Messages) DeleteBatch(ctx context.Context, agentID, sessionID string, ids []string) error {
+	path, err := m.agentPath(agentID, "sessions", sessionID, "messages", "batch")
+	if err != nil {
+		return err
+	}
+	return m.request(ctx, http.MethodDelete, path, requestOptions{
+		json: map[string]any{"ids": ids},
+	}, nil)
+}

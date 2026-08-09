@@ -1,0 +1,211 @@
+// Copyright 2026 Actx0. All rights reserved.
+// License can be found in the LICENSE file.
+
+package gctx0
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/go-resty/resty/v2"
+)
+
+const defaultBaseURL = "https://actx0.com"
+
+// Option configures a client.
+type Option func(*config)
+
+type config struct {
+	baseURL     string
+	timeout     time.Duration
+	accessKey   string
+	workspaceID string
+	httpClient  *http.Client
+}
+
+func defaultConfig() config {
+	return config{
+		baseURL: defaultBaseURL,
+		timeout: 30 * time.Second,
+	}
+}
+
+// WithBaseURL sets the API base URL.
+func WithBaseURL(baseURL string) Option {
+	return func(c *config) { c.baseURL = strings.TrimRight(baseURL, "/") }
+}
+
+// WithTimeout sets the HTTP timeout.
+func WithTimeout(timeout time.Duration) Option {
+	return func(c *config) { c.timeout = timeout }
+}
+
+// WithAccessKey sets the X-Access-Key value.
+func WithAccessKey(accessKey string) Option {
+	return func(c *config) { c.accessKey = accessKey }
+}
+
+// WithWorkspaceID sets the workspace used for workspace-scoped routes.
+func WithWorkspaceID(workspaceID string) Option {
+	return func(c *config) { c.workspaceID = workspaceID }
+}
+
+// WithHTTPClient sets a custom HTTP client used by Resty.
+func WithHTTPClient(client *http.Client) Option {
+	return func(c *config) { c.httpClient = client }
+}
+
+// BaseClient is the shared Resty transport used by resource clients.
+type BaseClient struct {
+	baseURL     string
+	timeout     time.Duration
+	accessKey   string
+	workspaceID string
+	resty       *resty.Client
+}
+
+func newBaseClient(opts ...Option) *BaseClient {
+	cfg := defaultConfig()
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
+	rc := resty.New().
+		SetBaseURL(strings.TrimRight(cfg.baseURL, "/")).
+		SetTimeout(cfg.timeout).
+		SetHeader("X-Access-Key", cfg.accessKey)
+	if cfg.httpClient != nil {
+		rc.SetTransport(cfg.httpClient.Transport)
+		if cfg.httpClient.Timeout > 0 {
+			rc.SetTimeout(cfg.httpClient.Timeout)
+		}
+	}
+
+	return &BaseClient{
+		baseURL:     strings.TrimRight(cfg.baseURL, "/"),
+		timeout:     cfg.timeout,
+		accessKey:   cfg.accessKey,
+		workspaceID: cfg.workspaceID,
+		resty:       rc,
+	}
+}
+
+func (c *BaseClient) copyFrom(parent *BaseClient) {
+	c.baseURL = parent.baseURL
+	c.timeout = parent.timeout
+	c.accessKey = parent.accessKey
+	c.workspaceID = parent.workspaceID
+	c.resty = parent.resty
+}
+
+type requestOptions struct {
+	params  map[string]string
+	json    any
+	form    map[string]string
+	file    *PreparedFile
+	headers map[string]string
+}
+
+func (c *BaseClient) request(ctx context.Context, method, path string, opts requestOptions, out any) error {
+	if c.accessKey == "" {
+		return fmt.Errorf("access_key is required")
+	}
+
+	req := c.resty.R().SetContext(ctx)
+	if len(opts.params) > 0 {
+		req.SetQueryParams(opts.params)
+	}
+	for key, value := range opts.headers {
+		req.SetHeader(key, value)
+	}
+	if out != nil {
+		req.SetResult(out)
+	}
+
+	var resp *resty.Response
+	var err error
+
+	switch {
+	case opts.file != nil:
+		if len(opts.form) > 0 {
+			req.SetFormData(opts.form)
+		}
+		req.SetFileReader("file", opts.file.Filename, bytes.NewReader(opts.file.Content))
+		resp, err = req.Execute(method, path)
+	case opts.json != nil:
+		req.SetBody(opts.json)
+		resp, err = req.Execute(method, path)
+	default:
+		resp, err = req.Execute(method, path)
+	}
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode() == http.StatusNoContent {
+		return nil
+	}
+	if resp.IsError() {
+		var parsed any
+		body := resp.Body()
+		if len(body) > 0 {
+			if jsonErr := json.Unmarshal(body, &parsed); jsonErr != nil {
+				parsed = string(body)
+			}
+		}
+		return &APIError{StatusCode: resp.StatusCode(), Body: parsed}
+	}
+	return nil
+}
+
+// Close releases idle HTTP connections.
+func (c *BaseClient) Close() {
+	if transport, ok := c.resty.GetClient().Transport.(*http.Transport); ok {
+		transport.CloseIdleConnections()
+	}
+}
+
+// Resource is the shared base for API resource clients.
+type Resource struct {
+	*BaseClient
+}
+
+func newResource(opts ...Option) Resource {
+	return Resource{BaseClient: newBaseClient(opts...)}
+}
+
+func (r *Resource) attachTo(parent *BaseClient) {
+	if r.BaseClient == nil {
+		r.BaseClient = &BaseClient{}
+	}
+	r.copyFrom(parent)
+}
+
+func (r *Resource) requireWorkspace() (string, error) {
+	if r.workspaceID == "" {
+		return "", fmt.Errorf("workspace_id is required")
+	}
+	return r.workspaceID, nil
+}
+
+func (r *Resource) workspacePath(parts ...string) (string, error) {
+	ws, err := r.requireWorkspace()
+	if err != nil {
+		return "", err
+	}
+	path := "/api/v1/workspaces/" + ws
+	for _, part := range parts {
+		path += "/" + part
+	}
+	return path, nil
+}
+
+func (r *Resource) agentPath(agentID string, parts ...string) (string, error) {
+	all := append([]string{"agents", agentID}, parts...)
+	return r.workspacePath(all...)
+}
