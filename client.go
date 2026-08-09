@@ -103,6 +103,13 @@ type RequestOptions struct {
 	Headers map[string]string
 }
 
+// ListMeta is pagination metadata from list responses.
+type ListMeta struct {
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+	Total  int `json:"total"`
+}
+
 func (c *BaseClient) Request(ctx context.Context, method, path string, opts RequestOptions, out any) error {
 	if c.accessKey == "" {
 		return fmt.Errorf("access_key is required")

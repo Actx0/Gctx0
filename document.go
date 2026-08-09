@@ -15,6 +15,73 @@ import (
 	"sort"
 )
 
+// FileBytes is an in-memory file upload.
+type FileBytes struct {
+	Filename    string
+	Content     []byte
+	ContentType string
+}
+
+// DocumentSize is a document size value.
+type DocumentSize struct {
+	Value int    `json:"value"`
+	Unit  string `json:"unit"`
+}
+
+// Document is a knowledge-base document.
+type Document struct {
+	ID               string       `json:"id"`
+	WorkspaceID      string       `json:"workspaceId"`
+	Title            string       `json:"title"`
+	Filename         string       `json:"filename"`
+	ContentType      string       `json:"contentType"`
+	Checksum         string       `json:"checksum"`
+	Size             DocumentSize `json:"size"`
+	CharCount        int          `json:"charCount"`
+	Labels           []string     `json:"labels"`
+	ChunkingStrategy string       `json:"chunkingStrategy"`
+	ChunkSize        int          `json:"chunkSize"`
+	ChunkOverlap     int          `json:"chunkOverlap"`
+	Status           string       `json:"status"`
+	CreatedAt        string       `json:"createdAt"`
+	UpdatedAt        string       `json:"updatedAt"`
+}
+
+// DocumentList is a paginated document list.
+type DocumentList struct {
+	Documents []Document `json:"documents"`
+	Limit     int        `json:"-"`
+	Offset    int        `json:"-"`
+	Total     int        `json:"-"`
+}
+
+// DocumentListResponse is the API list envelope.
+type DocumentListResponse struct {
+	Documents []Document `json:"documents"`
+	Meta      ListMeta   `json:"_meta"`
+}
+
+// SearchHit is a document search result.
+type SearchHit struct {
+	DocumentID string            `json:"documentId"`
+	ChunkID    string            `json:"chunkId"`
+	Score      float64           `json:"score"`
+	Text       string            `json:"text"`
+	Labels     map[string]string `json:"labels"`
+}
+
+// SearchResults holds document search hits.
+type SearchResults struct {
+	Results []SearchHit `json:"results"`
+}
+
+// PreparedFile is a file ready for multipart upload.
+type PreparedFile struct {
+	Filename    string
+	Content     []byte
+	ContentType string
+}
+
 // Documents is the workspace knowledge-base (documents) API client.
 type Documents struct {
 	Resource
@@ -31,12 +98,6 @@ func NewDocuments(opts ...Option) *Documents {
 // NewKnowledge creates a standalone documents client.
 func NewKnowledge(opts ...Option) *Documents {
 	return NewDocuments(opts...)
-}
-
-type PreparedFile struct {
-	Filename    string
-	Content     []byte
-	ContentType string
 }
 
 func PrepareFile(file any) (PreparedFile, error) {
@@ -83,10 +144,12 @@ func (d *Documents) List(ctx context.Context, limit, offset int) (*DocumentList,
 	if err != nil {
 		return nil, err
 	}
+
 	var raw DocumentListResponse
 	if err := d.Request(ctx, http.MethodGet, path, RequestOptions{Params: PageParams(limit, offset)}, &raw); err != nil {
 		return nil, err
 	}
+
 	return &DocumentList{
 		Documents: raw.Documents,
 		Limit:     raw.Meta.Limit,
@@ -101,6 +164,7 @@ func (d *Documents) Exists(ctx context.Context, file any, labels map[string]stri
 	if err != nil {
 		return nil, err
 	}
+
 	checksum := FileChecksum(prepared.Content)
 	expected := map[string]struct{}{}
 	for key, value := range labels {
@@ -148,10 +212,12 @@ func (d *Documents) Upload(ctx context.Context, file any, title string, labels m
 	if err != nil {
 		return nil, err
 	}
+
 	path, err := d.WorkspacePath("documents")
 	if err != nil {
 		return nil, err
 	}
+
 	form := map[string]string{"title": title}
 	if labels != nil {
 		keys := make([]string, 0, len(labels))
@@ -169,6 +235,7 @@ func (d *Documents) Upload(ctx context.Context, file any, title string, labels m
 		}
 		form["labels"] = string(b)
 	}
+
 	var doc Document
 	if err := d.Request(ctx, http.MethodPost, path, RequestOptions{
 		Form: form,
@@ -176,6 +243,7 @@ func (d *Documents) Upload(ctx context.Context, file any, title string, labels m
 	}, &doc); err != nil {
 		return nil, err
 	}
+
 	return &doc, nil
 }
 
@@ -185,14 +253,17 @@ func (d *Documents) Search(ctx context.Context, query string, labels map[string]
 	if err != nil {
 		return nil, err
 	}
+
 	body := map[string]any{"query": query, "limit": limit}
 	if labels != nil {
 		body["labels"] = labels
 	}
+
 	var results SearchResults
 	if err := d.Request(ctx, http.MethodPost, path, RequestOptions{JSON: body}, &results); err != nil {
 		return nil, err
 	}
+
 	return &results, nil
 }
 
@@ -202,5 +273,6 @@ func (d *Documents) Delete(ctx context.Context, documentID string) error {
 	if err != nil {
 		return err
 	}
+
 	return d.Request(ctx, http.MethodDelete, path, RequestOptions{}, nil)
 }

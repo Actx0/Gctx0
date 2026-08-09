@@ -82,3 +82,52 @@ func MemoryBatchPayload(items []MemoryInput) map[string]any {
 	}
 	return map[string]any{"memories": encoded}
 }
+
+func EncodeJSONField(value any) (string, bool, error) {
+	if value == nil {
+		return "", false, nil
+	}
+	switch v := value.(type) {
+	case string:
+		return v, true, nil
+	default:
+		b, err := json.Marshal(v)
+		if err != nil {
+			return "", false, err
+		}
+		return string(b), true, nil
+	}
+}
+
+func PromptWriteBody(content string, opts PromptWriteOptions) (map[string]any, error) {
+	body := map[string]any{"content": content}
+	if opts.Name != "" {
+		body["name"] = opts.Name
+	}
+	if opts.Description != "" {
+		body["description"] = opts.Description
+	}
+	if opts.Type != "" {
+		body["type"] = opts.Type
+	}
+	if encoded, ok, err := EncodeJSONField(opts.Config); err != nil {
+		return nil, err
+	} else if ok {
+		body["config"] = encoded
+	}
+	if opts.CommitMessage != "" {
+		body["commitMessage"] = opts.CommitMessage
+	}
+	if encoded, ok, err := EncodeJSONField(opts.Meta); err != nil {
+		return nil, err
+	} else if ok {
+		body["meta"] = encoded
+	}
+	if opts.Status != "" {
+		body["status"] = opts.Status
+	}
+	if opts.Production != nil {
+		body["production"] = *opts.Production
+	}
+	return body, nil
+}
