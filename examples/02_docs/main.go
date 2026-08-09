@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Actx0/Gctx0/examples/exampleutil"
+	"github.com/Actx0/Gctx0/examples/util"
 )
 
 var labels = map[string]string{"tag": "docs", "team": "platform-team"}
@@ -39,7 +39,7 @@ func main() {
 		log.Fatalf("no .txt files in %s", docsDir)
 	}
 
-	client := exampleutil.NewClient()
+	client := util.NewClient()
 	defer client.Close()
 	ctx := context.Background()
 

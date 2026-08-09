@@ -8,17 +8,17 @@ import (
 	"log"
 
 	"github.com/Actx0/Gctx0"
-	"github.com/Actx0/Gctx0/examples/exampleutil"
+	"github.com/Actx0/Gctx0/examples/util"
 )
 
 const system = "You are a helpful personal assistant. Use what you remember about the user and any provided context to answer. Cite context like [1]. If unsure, say so."
 
 func main() {
-	client := exampleutil.NewClient()
+	client := util.NewClient()
 	defer client.Close()
 	ctx := context.Background()
 
-	setup, err := exampleutil.Bootstrap(ctx, client,
+	setup, err := util.Bootstrap(ctx, client,
 		"Personal assistant (memories list)",
 		"Personal assistant using full memory list history + RAG.",
 		"Personal Assistant Memories List",
@@ -29,28 +29,28 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer exampleutil.Teardown(ctx, client, setup)
+	defer util.Teardown(ctx, client, setup)
 
 	log.Printf("agent=%s session=%s", setup.AgentID, setup.SessionID)
 	log.Println("chat — quit/exit to stop")
 
-	err = exampleutil.ChatLoop(func(text string) error {
+	err = util.ChatLoop(func(text string) error {
 		stored, err := client.Memory.List(ctx, setup.AgentID, setup.SessionID, 100, 0)
 		if err != nil {
 			return err
 		}
-		rag, err := exampleutil.RAGContext(ctx, client, text, 3)
+		rag, err := util.RAGContext(ctx, client, text, 3)
 		if err != nil {
 			return err
 		}
-		reply, usage, err := exampleutil.Ask(setup.System, text, exampleutil.HistoryFromMemories(stored.Memories), rag)
+		reply, usage, err := util.Ask(setup.System, text, util.HistoryFromMemories(stored.Memories), rag)
 		if err != nil {
 			return err
 		}
 		if reply == "" {
 			return nil
 		}
-		meta := map[string]any{"model": exampleutil.DefaultModel, "usage": usage}
+		meta := map[string]any{"model": util.DefaultModel, "usage": usage}
 		_, err = client.Message.CreateBatch(ctx, setup.AgentID, setup.SessionID, []gctx0.MessageInput{
 			{Role: gctx0.MessageRoleUser, Content: text},
 			{Role: gctx0.MessageRoleAssistant, Content: reply, Meta: meta},

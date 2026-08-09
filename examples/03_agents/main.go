@@ -10,7 +10,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/Actx0/Gctx0/examples/exampleutil"
+	"github.com/Actx0/Gctx0/examples/util"
 )
 
 func show(label string, value any) {
@@ -22,7 +22,7 @@ func show(label string, value any) {
 }
 
 func main() {
-	client := exampleutil.NewClient()
+	client := util.NewClient()
 	defer client.Close()
 	ctx := context.Background()
 

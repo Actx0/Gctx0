@@ -10,11 +10,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/Actx0/Gctx0/examples/exampleutil"
+	"github.com/Actx0/Gctx0/examples/util"
 )
 
 func main() {
-	client := exampleutil.NewClient()
+	client := util.NewClient()
 	defer client.Close()
 
 	me, err := client.Me.Get(context.Background())
