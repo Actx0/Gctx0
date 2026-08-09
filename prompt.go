@@ -6,8 +6,12 @@ package gctx0
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"regexp"
 )
+
+var templateVar = regexp.MustCompile(`\{\{(\w+)\}\}`)
 
 // PromptWriteOptions are optional fields for prompt create/update.
 type PromptWriteOptions struct {
@@ -19,6 +23,22 @@ type PromptWriteOptions struct {
 	Meta          any
 	Status        PromptStatus
 	Production    *bool
+}
+
+func encodeJSONField(value any) (string, bool, error) {
+	if value == nil {
+		return "", false, nil
+	}
+	switch v := value.(type) {
+	case string:
+		return v, true, nil
+	default:
+		b, err := json.Marshal(v)
+		if err != nil {
+			return "", false, err
+		}
+		return string(b), true, nil
+	}
 }
 
 func promptWriteBody(content string, opts PromptWriteOptions) (map[string]any, error) {
@@ -66,16 +86,12 @@ func NewPrompts(opts ...Option) *Prompts {
 
 // List returns workspace prompts.
 func (p *Prompts) List(ctx context.Context, limit, offset int) (*PromptList, error) {
-	params, err := buildQueryParams(QueryParams{Limit: intPtr(limit), Offset: intPtr(offset)})
-	if err != nil {
-		return nil, err
-	}
 	path, err := p.workspacePath("prompts")
 	if err != nil {
 		return nil, err
 	}
-	var raw promptListResponse
-	if err := p.request(ctx, http.MethodGet, path, requestOptions{params: params}, &raw); err != nil {
+	var raw PromptListResponse
+	if err := p.request(ctx, http.MethodGet, path, RequestOptions{Params: PageParams(limit, offset)}, &raw); err != nil {
 		return nil, err
 	}
 	return &PromptList{
@@ -99,7 +115,7 @@ func (p *Prompts) Create(ctx context.Context, name string, typ PromptType, conte
 		return nil, err
 	}
 	var info PromptInfo
-	if err := p.request(ctx, http.MethodPost, path, requestOptions{json: body}, &info); err != nil {
+	if err := p.request(ctx, http.MethodPost, path, RequestOptions{JSON: body}, &info); err != nil {
 		return nil, err
 	}
 	return &info, nil
@@ -112,7 +128,7 @@ func (p *Prompts) Get(ctx context.Context, promptID string) (*PromptInfo, error)
 		return nil, err
 	}
 	var info PromptInfo
-	if err := p.request(ctx, http.MethodGet, path, requestOptions{}, &info); err != nil {
+	if err := p.request(ctx, http.MethodGet, path, RequestOptions{}, &info); err != nil {
 		return nil, err
 	}
 	return &info, nil
@@ -124,7 +140,7 @@ func (p *Prompts) Delete(ctx context.Context, promptID string) error {
 	if err != nil {
 		return err
 	}
-	return p.request(ctx, http.MethodDelete, path, requestOptions{}, nil)
+	return p.request(ctx, http.MethodDelete, path, RequestOptions{}, nil)
 }
 
 // GetByName returns a prompt version by handle.
@@ -138,7 +154,7 @@ func (p *Prompts) GetByName(ctx context.Context, name string, version string) (*
 		params["version"] = version
 	}
 	var raw json.RawMessage
-	if err := p.request(ctx, http.MethodGet, path, requestOptions{params: params}, &raw); err != nil {
+	if err := p.request(ctx, http.MethodGet, path, RequestOptions{Params: params}, &raw); err != nil {
 		return nil, err
 	}
 	prompt, err := normalizePrompt(raw)
@@ -150,16 +166,12 @@ func (p *Prompts) GetByName(ctx context.Context, name string, version string) (*
 
 // ListVersions returns prompt versions.
 func (p *Prompts) ListVersions(ctx context.Context, promptID string, limit, offset int) (*PromptVersionList, error) {
-	params, err := buildQueryParams(QueryParams{Limit: intPtr(limit), Offset: intPtr(offset)})
-	if err != nil {
-		return nil, err
-	}
 	path, err := p.workspacePath("prompts", promptID, "versions")
 	if err != nil {
 		return nil, err
 	}
-	var raw promptVersionListResponse
-	if err := p.request(ctx, http.MethodGet, path, requestOptions{params: params}, &raw); err != nil {
+	var raw PromptVersionListResponse
+	if err := p.request(ctx, http.MethodGet, path, RequestOptions{Params: PageParams(limit, offset)}, &raw); err != nil {
 		return nil, err
 	}
 	versions := make([]Prompt, 0, len(raw.Versions))
@@ -186,7 +198,7 @@ func (p *Prompts) CreateVersion(ctx context.Context, promptID string, typ Prompt
 		return nil, err
 	}
 	var raw json.RawMessage
-	if err := p.request(ctx, http.MethodPost, path, requestOptions{json: body}, &raw); err != nil {
+	if err := p.request(ctx, http.MethodPost, path, RequestOptions{JSON: body}, &raw); err != nil {
 		return nil, err
 	}
 	prompt, err := normalizePrompt(raw)
@@ -203,7 +215,7 @@ func (p *Prompts) GetVersion(ctx context.Context, promptID, versionID string) (*
 		return nil, err
 	}
 	var raw json.RawMessage
-	if err := p.request(ctx, http.MethodGet, path, requestOptions{}, &raw); err != nil {
+	if err := p.request(ctx, http.MethodGet, path, RequestOptions{}, &raw); err != nil {
 		return nil, err
 	}
 	prompt, err := normalizePrompt(raw)
@@ -224,7 +236,7 @@ func (p *Prompts) UpdateVersion(ctx context.Context, promptID, versionID, conten
 		return nil, err
 	}
 	var raw json.RawMessage
-	if err := p.request(ctx, http.MethodPut, path, requestOptions{json: body}, &raw); err != nil {
+	if err := p.request(ctx, http.MethodPut, path, RequestOptions{JSON: body}, &raw); err != nil {
 		return nil, err
 	}
 	prompt, err := normalizePrompt(raw)
@@ -240,5 +252,91 @@ func (p *Prompts) DeleteVersion(ctx context.Context, promptID, versionID string)
 	if err != nil {
 		return err
 	}
-	return p.request(ctx, http.MethodDelete, path, requestOptions{}, nil)
+	return p.request(ctx, http.MethodDelete, path, RequestOptions{}, nil)
+}
+
+// Compile replaces {{var}} placeholders in prompt content.
+func CompilePrompt(content string, variables map[string]string) (string, error) {
+	var missing string
+	out := templateVar.ReplaceAllStringFunc(content, func(match string) string {
+		key := templateVar.FindStringSubmatch(match)[1]
+		value, ok := variables[key]
+		if !ok {
+			missing = key
+			return match
+		}
+		return value
+	})
+	if missing != "" {
+		return "", fmt.Errorf("missing template variable: %s", missing)
+	}
+	return out, nil
+}
+
+// Compile replaces {{var}} placeholders on a Prompt.
+func (p Prompt) Compile(variables map[string]string) (string, error) {
+	return CompilePrompt(p.Content, variables)
+}
+
+func normalizePrompt(raw json.RawMessage) (Prompt, error) {
+	var envelope struct {
+		ID            string          `json:"id"`
+		Name          string          `json:"name"`
+		Handle        string          `json:"handle"`
+		Description   string          `json:"description"`
+		Version       int             `json:"version"`
+		Type          string          `json:"type"`
+		Content       string          `json:"content"`
+		CommitHash    string          `json:"commitHash"`
+		Status        string          `json:"status"`
+		Production    bool            `json:"production"`
+		CreatedAt     string          `json:"createdAt"`
+		UpdatedAt     string          `json:"updatedAt"`
+		Config        json.RawMessage `json:"config"`
+		Labels        []string        `json:"labels"`
+		CommitMessage *string         `json:"commitMessage"`
+		Meta          *string         `json:"meta"`
+	}
+	if err := json.Unmarshal(raw, &envelope); err != nil {
+		return Prompt{}, err
+	}
+
+	config := map[string]any{}
+	if len(envelope.Config) > 0 && string(envelope.Config) != "null" {
+		if envelope.Config[0] == '"' {
+			var asString string
+			if err := json.Unmarshal(envelope.Config, &asString); err != nil {
+				return Prompt{}, err
+			}
+			if asString != "" {
+				if err := json.Unmarshal([]byte(asString), &config); err != nil {
+					return Prompt{}, err
+				}
+			}
+		} else if err := json.Unmarshal(envelope.Config, &config); err != nil {
+			return Prompt{}, err
+		}
+	}
+	if envelope.Labels == nil {
+		envelope.Labels = []string{}
+	}
+
+	return Prompt{
+		ID:            envelope.ID,
+		Name:          envelope.Name,
+		Handle:        envelope.Handle,
+		Description:   envelope.Description,
+		Version:       envelope.Version,
+		Type:          envelope.Type,
+		Content:       envelope.Content,
+		CommitHash:    envelope.CommitHash,
+		Status:        envelope.Status,
+		Production:    envelope.Production,
+		CreatedAt:     envelope.CreatedAt,
+		UpdatedAt:     envelope.UpdatedAt,
+		Config:        config,
+		Labels:        envelope.Labels,
+		CommitMessage: envelope.CommitMessage,
+		Meta:          envelope.Meta,
+	}, nil
 }

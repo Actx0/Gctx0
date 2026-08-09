@@ -20,16 +20,12 @@ func NewMessages(opts ...Option) *Messages {
 
 // List returns session messages.
 func (m *Messages) List(ctx context.Context, agentID, sessionID string, limit, offset int) (*MessageList, error) {
-	params, err := buildQueryParams(QueryParams{Limit: intPtr(limit), Offset: intPtr(offset)})
-	if err != nil {
-		return nil, err
-	}
 	path, err := m.agentPath(agentID, "sessions", sessionID, "messages")
 	if err != nil {
 		return nil, err
 	}
-	var raw messageListResponse
-	if err := m.request(ctx, http.MethodGet, path, requestOptions{params: params}, &raw); err != nil {
+	var raw MessageListResponse
+	if err := m.request(ctx, http.MethodGet, path, RequestOptions{Params: PageParams(limit, offset)}, &raw); err != nil {
 		return nil, err
 	}
 	return &MessageList{
@@ -47,7 +43,7 @@ func (m *Messages) Get(ctx context.Context, agentID, sessionID, messageID string
 		return nil, err
 	}
 	var message Message
-	if err := m.request(ctx, http.MethodGet, path, requestOptions{}, &message); err != nil {
+	if err := m.request(ctx, http.MethodGet, path, RequestOptions{}, &message); err != nil {
 		return nil, err
 	}
 	return &message, nil
@@ -60,8 +56,8 @@ func (m *Messages) Search(ctx context.Context, agentID, sessionID, query string,
 		return nil, err
 	}
 	var results MessageSearchResults
-	if err := m.request(ctx, http.MethodPost, path, requestOptions{
-		json: map[string]any{"query": query, "limit": limit},
+	if err := m.request(ctx, http.MethodPost, path, RequestOptions{
+		JSON: map[string]any{"query": query, "limit": limit},
 	}, &results); err != nil {
 		return nil, err
 	}
@@ -75,8 +71,8 @@ func (m *Messages) Create(ctx context.Context, agentID, sessionID string, messag
 		return nil, err
 	}
 	var created Message
-	if err := m.request(ctx, http.MethodPost, path, requestOptions{
-		json: encodeMessageItem(message),
+	if err := m.request(ctx, http.MethodPost, path, RequestOptions{
+		JSON: EncodeMessageItem(message),
 	}, &created); err != nil {
 		return nil, err
 	}
@@ -89,9 +85,9 @@ func (m *Messages) CreateBatch(ctx context.Context, agentID, sessionID string, m
 	if err != nil {
 		return nil, err
 	}
-	var raw messageBatchResponse
-	if err := m.request(ctx, http.MethodPost, path, requestOptions{
-		json: BuildMessageBatchPayload(messages),
+	var raw MessageBatchResponse
+	if err := m.request(ctx, http.MethodPost, path, RequestOptions{
+		JSON: MessageBatchPayload(messages),
 	}, &raw); err != nil {
 		return nil, err
 	}
@@ -109,8 +105,8 @@ func (m *Messages) Update(ctx context.Context, agentID, sessionID, messageID, co
 		fields["role"] = string(role)
 	}
 	var updated Message
-	if err := m.request(ctx, http.MethodPut, path, requestOptions{
-		json: encodeUpdateBody(content, meta, fields),
+	if err := m.request(ctx, http.MethodPut, path, RequestOptions{
+		JSON: EncodeUpdateBody(content, meta, fields),
 	}, &updated); err != nil {
 		return nil, err
 	}
@@ -123,7 +119,7 @@ func (m *Messages) Delete(ctx context.Context, agentID, sessionID, messageID str
 	if err != nil {
 		return err
 	}
-	return m.request(ctx, http.MethodDelete, path, requestOptions{}, nil)
+	return m.request(ctx, http.MethodDelete, path, RequestOptions{}, nil)
 }
 
 // DeleteBatch deletes multiple messages.
@@ -132,7 +128,7 @@ func (m *Messages) DeleteBatch(ctx context.Context, agentID, sessionID string, i
 	if err != nil {
 		return err
 	}
-	return m.request(ctx, http.MethodDelete, path, requestOptions{
-		json: map[string]any{"ids": ids},
+	return m.request(ctx, http.MethodDelete, path, RequestOptions{
+		JSON: map[string]any{"ids": ids},
 	}, nil)
 }

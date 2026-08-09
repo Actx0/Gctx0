@@ -6,33 +6,27 @@ package gctx0
 // MemoryKind is the kind of a session memory.
 type MemoryKind string
 
-const (
-	MemoryKindSummary    MemoryKind = "summary"
-	MemoryKindFact       MemoryKind = "fact"
-	MemoryKindPreference MemoryKind = "preference"
-)
-
 // MessageRole is the role of a session message.
 type MessageRole string
 
-const (
-	MessageRoleSystem    MessageRole = "system"
-	MessageRoleUser      MessageRole = "user"
-	MessageRoleAssistant MessageRole = "assistant"
-)
-
 // PromptType is the type of a prompt version.
 type PromptType string
-
-const (
-	PromptTypeText PromptType = "text"
-	PromptTypeChat PromptType = "chat"
-)
 
 // PromptStatus is the lifecycle status of a prompt version.
 type PromptStatus string
 
 const (
+	MemoryKindSummary    MemoryKind = "summary"
+	MemoryKindFact       MemoryKind = "fact"
+	MemoryKindPreference MemoryKind = "preference"
+
+	MessageRoleSystem    MessageRole = "system"
+	MessageRoleUser      MessageRole = "user"
+	MessageRoleAssistant MessageRole = "assistant"
+
+	PromptTypeText PromptType = "text"
+	PromptTypeChat PromptType = "chat"
+
 	PromptStatusActive   PromptStatus = "active"
 	PromptStatusArchived PromptStatus = "archived"
 )
@@ -81,9 +75,9 @@ type AgentList struct {
 	Total  int     `json:"-"`
 }
 
-type agentListResponse struct {
-	Agents []Agent `json:"agents"`
-	Meta   listMeta `json:"_meta"`
+type AgentListResponse struct {
+	Agents []Agent  `json:"agents"`
+	Meta   ListMeta `json:"_meta"`
 }
 
 // Session is an agent session.
@@ -108,9 +102,9 @@ type SessionList struct {
 	Total    int       `json:"-"`
 }
 
-type sessionListResponse struct {
+type SessionListResponse struct {
 	Sessions []Session `json:"sessions"`
-	Meta     listMeta  `json:"_meta"`
+	Meta     ListMeta  `json:"_meta"`
 }
 
 // Message is a session message.
@@ -131,9 +125,9 @@ type MessageList struct {
 	Total    int       `json:"-"`
 }
 
-type messageListResponse struct {
+type MessageListResponse struct {
 	Messages []Message `json:"messages"`
-	Meta     listMeta  `json:"_meta"`
+	Meta     ListMeta  `json:"_meta"`
 }
 
 // MessageSearchHit is a message search result.
@@ -168,9 +162,9 @@ type MemoryList struct {
 	Total    int      `json:"-"`
 }
 
-type memoryListResponse struct {
+type MemoryListResponse struct {
 	Memories []Memory `json:"memories"`
-	Meta     listMeta `json:"_meta"`
+	Meta     ListMeta `json:"_meta"`
 }
 
 // MemorySearchHit is a memory search result.
@@ -219,9 +213,9 @@ type DocumentList struct {
 	Total     int        `json:"-"`
 }
 
-type documentListResponse struct {
+type DocumentListResponse struct {
 	Documents []Document `json:"documents"`
-	Meta      listMeta   `json:"_meta"`
+	Meta      ListMeta   `json:"_meta"`
 }
 
 // SearchHit is a document search result.
@@ -237,26 +231,6 @@ type SearchHit struct {
 type SearchResults struct {
 	Results []SearchHit `json:"results"`
 }
-
-// AccessKeyInfo describes an access key principal.
-type AccessKeyInfo struct {
-	ID          string   `json:"id"`
-	WorkspaceID string   `json:"workspaceId"`
-	Name        string   `json:"name"`
-	Permissions []string `json:"permissions"`
-	CreatedAt   string   `json:"createdAt"`
-	UpdatedAt   string   `json:"updatedAt"`
-	ExpiresAt   *string  `json:"expiresAt,omitempty"`
-}
-
-// AccessKeyPrincipal is returned by /api/v1/me for access keys.
-type AccessKeyPrincipal struct {
-	PrincipalType string        `json:"principalType"`
-	AccessKey     AccessKeyInfo `json:"accessKey"`
-}
-
-// MePrincipal is currently always an access-key principal.
-type MePrincipal = AccessKeyPrincipal
 
 // PromptInfo is a prompt summary from list/create/get-by-id.
 type PromptInfo struct {
@@ -275,9 +249,9 @@ type PromptList struct {
 	Total   int          `json:"-"`
 }
 
-type promptListResponse struct {
+type PromptListResponse struct {
 	Prompts []PromptInfo `json:"prompts"`
-	Meta    listMeta     `json:"_meta"`
+	Meta    ListMeta     `json:"_meta"`
 }
 
 // Prompt is a prompt version returned by the API.
@@ -311,21 +285,21 @@ type PromptVersionList struct {
 	Total    int      `json:"-"`
 }
 
-type promptVersionListResponse struct {
+type PromptVersionListResponse struct {
 	Versions []Prompt `json:"versions"`
-	Meta     listMeta `json:"_meta"`
+	Meta     ListMeta `json:"_meta"`
 }
 
-type listMeta struct {
+type ListMeta struct {
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
 	Total  int `json:"total"`
 }
 
-type messageBatchResponse struct {
+type MessageBatchResponse struct {
 	Messages []Message `json:"messages"`
 }
 
-type memoryBatchResponse struct {
+type MemoryBatchResponse struct {
 	Memories []Memory `json:"memories"`
 }

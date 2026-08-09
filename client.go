@@ -24,7 +24,7 @@ type config struct {
 	baseURL     string
 	timeout     time.Duration
 	accessKey   string
-	workspaceID string
+	workspaceId string
 	httpClient  *http.Client
 }
 
@@ -51,8 +51,8 @@ func WithAccessKey(accessKey string) Option {
 }
 
 // WithWorkspaceID sets the workspace used for workspace-scoped routes.
-func WithWorkspaceID(workspaceID string) Option {
-	return func(c *config) { c.workspaceID = workspaceID }
+func WithWorkspaceID(workspaceId string) Option {
+	return func(c *config) { c.workspaceId = workspaceId }
 }
 
 // WithHTTPClient sets a custom HTTP client used by Resty.
@@ -65,7 +65,7 @@ type BaseClient struct {
 	baseURL     string
 	timeout     time.Duration
 	accessKey   string
-	workspaceID string
+	workspaceId string
 	resty       *resty.Client
 }
 
@@ -90,7 +90,7 @@ func newBaseClient(opts ...Option) *BaseClient {
 		baseURL:     strings.TrimRight(cfg.baseURL, "/"),
 		timeout:     cfg.timeout,
 		accessKey:   cfg.accessKey,
-		workspaceID: cfg.workspaceID,
+		workspaceId: cfg.workspaceId,
 		resty:       rc,
 	}
 }
@@ -99,28 +99,28 @@ func (c *BaseClient) copyFrom(parent *BaseClient) {
 	c.baseURL = parent.baseURL
 	c.timeout = parent.timeout
 	c.accessKey = parent.accessKey
-	c.workspaceID = parent.workspaceID
+	c.workspaceId = parent.workspaceId
 	c.resty = parent.resty
 }
 
-type requestOptions struct {
-	params  map[string]string
-	json    any
-	form    map[string]string
-	file    *PreparedFile
-	headers map[string]string
+type RequestOptions struct {
+	Params  map[string]string
+	JSON    any
+	Form    map[string]string
+	File    *PreparedFile
+	Headers map[string]string
 }
 
-func (c *BaseClient) request(ctx context.Context, method, path string, opts requestOptions, out any) error {
+func (c *BaseClient) request(ctx context.Context, method, path string, opts RequestOptions, out any) error {
 	if c.accessKey == "" {
 		return fmt.Errorf("access_key is required")
 	}
 
 	req := c.resty.R().SetContext(ctx)
-	if len(opts.params) > 0 {
-		req.SetQueryParams(opts.params)
+	if len(opts.Params) > 0 {
+		req.SetQueryParams(opts.Params)
 	}
-	for key, value := range opts.headers {
+	for key, value := range opts.Headers {
 		req.SetHeader(key, value)
 	}
 	if out != nil {
@@ -131,14 +131,14 @@ func (c *BaseClient) request(ctx context.Context, method, path string, opts requ
 	var err error
 
 	switch {
-	case opts.file != nil:
-		if len(opts.form) > 0 {
-			req.SetFormData(opts.form)
+	case opts.File != nil:
+		if len(opts.Form) > 0 {
+			req.SetFormData(opts.Form)
 		}
-		req.SetFileReader("file", opts.file.Filename, bytes.NewReader(opts.file.Content))
+		req.SetFileReader("file", opts.File.Filename, bytes.NewReader(opts.File.Content))
 		resp, err = req.Execute(method, path)
-	case opts.json != nil:
-		req.SetBody(opts.json)
+	case opts.JSON != nil:
+		req.SetBody(opts.JSON)
 		resp, err = req.Execute(method, path)
 	default:
 		resp, err = req.Execute(method, path)
@@ -187,10 +187,10 @@ func (r *Resource) attachTo(parent *BaseClient) {
 }
 
 func (r *Resource) requireWorkspace() (string, error) {
-	if r.workspaceID == "" {
+	if r.workspaceId == "" {
 		return "", fmt.Errorf("workspace_id is required")
 	}
-	return r.workspaceID, nil
+	return r.workspaceId, nil
 }
 
 func (r *Resource) workspacePath(parts ...string) (string, error) {

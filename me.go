@@ -8,6 +8,23 @@ import (
 	"net/http"
 )
 
+// AccessKeyInfo describes an access key principal.
+type AccessKeyInfo struct {
+	ID          string   `json:"id"`
+	WorkspaceID string   `json:"workspaceId"`
+	Name        string   `json:"name"`
+	Permissions []string `json:"permissions"`
+	CreatedAt   string   `json:"createdAt"`
+	UpdatedAt   string   `json:"updatedAt"`
+	ExpiresAt   *string  `json:"expiresAt,omitempty"`
+}
+
+// MePrincipal is returned by /api/v1/me.
+type MePrincipal struct {
+	PrincipalType string        `json:"principalType"`
+	AccessKey     AccessKeyInfo `json:"accessKey"`
+}
+
 // Me is the key introspection API client.
 type Me struct {
 	Resource
@@ -18,14 +35,10 @@ func NewMe(opts ...Option) *Me {
 	return &Me{Resource: newResource(opts...)}
 }
 
-// Get returns the current access-key principal.
-func (m *Me) Get(ctx context.Context) (*AccessKeyPrincipal, error) {
-	var raw map[string]any
-	if err := m.request(ctx, http.MethodGet, "/api/v1/me", requestOptions{}, &raw); err != nil {
-		return nil, err
-	}
-	principal, err := parseMePrincipal(raw)
-	if err != nil {
+// Get returns the current principal for the access key.
+func (m *Me) Get(ctx context.Context) (*MePrincipal, error) {
+	var principal MePrincipal
+	if err := m.request(ctx, http.MethodGet, "/api/v1/me", RequestOptions{}, &principal); err != nil {
 		return nil, err
 	}
 	return &principal, nil

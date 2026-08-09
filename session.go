@@ -25,11 +25,8 @@ func NewSessions(opts ...Option) *Sessions {
 	return &Sessions{Resource: newResource(opts...)}
 }
 
-func (s *Sessions) requireLookup(lookup SessionLookup) (map[string]string, error) {
-	params, err := buildQueryParams(QueryParams{
-		ExternalID: lookup.ExternalID,
-		Labels:     lookup.Labels,
-	})
+func (s *Sessions) RequireLookup(lookup SessionLookup) (map[string]string, error) {
+	params, err := LabelParams(lookup.ExternalID, lookup.Labels)
 	if err != nil {
 		return nil, err
 	}
@@ -41,10 +38,11 @@ func (s *Sessions) requireLookup(lookup SessionLookup) (map[string]string, error
 
 // Create creates a session keyed by external ID or labels.
 func (s *Sessions) Create(ctx context.Context, agentID string, lookup SessionLookup, title string) (*Session, error) {
-	params, err := s.requireLookup(lookup)
+	params, err := s.RequireLookup(lookup)
 	if err != nil {
 		return nil, err
 	}
+
 	path, err := s.agentPath(agentID, "sessions")
 	if err != nil {
 		return nil, err
@@ -54,9 +52,9 @@ func (s *Sessions) Create(ctx context.Context, agentID string, lookup SessionLoo
 		body = map[string]string{"title": title}
 	}
 	var session Session
-	if err := s.request(ctx, http.MethodPost, path, requestOptions{
-		params: params,
-		json:   body,
+	if err := s.request(ctx, http.MethodPost, path, RequestOptions{
+		Params: params,
+		JSON:   body,
 	}, &session); err != nil {
 		return nil, err
 	}
@@ -65,21 +63,19 @@ func (s *Sessions) Create(ctx context.Context, agentID string, lookup SessionLoo
 
 // List returns sessions for an agent.
 func (s *Sessions) List(ctx context.Context, agentID string, lookup SessionLookup, limit, offset int) (*SessionList, error) {
-	params, err := buildQueryParams(QueryParams{
-		ExternalID: lookup.ExternalID,
-		Labels:     lookup.Labels,
-		Limit:      intPtr(limit),
-		Offset:     intPtr(offset),
-	})
+	params, err := LabelParams(lookup.ExternalID, lookup.Labels)
 	if err != nil {
 		return nil, err
+	}
+	for key, value := range PageParams(limit, offset) {
+		params[key] = value
 	}
 	path, err := s.agentPath(agentID, "sessions")
 	if err != nil {
 		return nil, err
 	}
-	var raw sessionListResponse
-	if err := s.request(ctx, http.MethodGet, path, requestOptions{params: params}, &raw); err != nil {
+	var raw SessionListResponse
+	if err := s.request(ctx, http.MethodGet, path, RequestOptions{Params: params}, &raw); err != nil {
 		return nil, err
 	}
 	return &SessionList{
@@ -97,7 +93,7 @@ func (s *Sessions) Get(ctx context.Context, agentID, sessionID string) (*Session
 		return nil, err
 	}
 	var session Session
-	if err := s.request(ctx, http.MethodGet, path, requestOptions{}, &session); err != nil {
+	if err := s.request(ctx, http.MethodGet, path, RequestOptions{}, &session); err != nil {
 		return nil, err
 	}
 	return &session, nil
@@ -105,7 +101,7 @@ func (s *Sessions) Get(ctx context.Context, agentID, sessionID string) (*Session
 
 // GetByLabels returns a session by external ID or labels.
 func (s *Sessions) GetByLabels(ctx context.Context, agentID string, lookup SessionLookup) (*Session, error) {
-	params, err := s.requireLookup(lookup)
+	params, err := s.RequireLookup(lookup)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +110,7 @@ func (s *Sessions) GetByLabels(ctx context.Context, agentID string, lookup Sessi
 		return nil, err
 	}
 	var session Session
-	if err := s.request(ctx, http.MethodGet, path, requestOptions{params: params}, &session); err != nil {
+	if err := s.request(ctx, http.MethodGet, path, RequestOptions{Params: params}, &session); err != nil {
 		return nil, err
 	}
 	return &session, nil
@@ -122,7 +118,7 @@ func (s *Sessions) GetByLabels(ctx context.Context, agentID string, lookup Sessi
 
 // Update updates a session matched by external ID or labels.
 func (s *Sessions) Update(ctx context.Context, agentID string, lookup SessionLookup, title string, newLabels map[string]string) (*Session, error) {
-	params, err := s.requireLookup(lookup)
+	params, err := s.RequireLookup(lookup)
 	if err != nil {
 		return nil, err
 	}
@@ -138,9 +134,9 @@ func (s *Sessions) Update(ctx context.Context, agentID string, lookup SessionLoo
 		body["labels"] = newLabels
 	}
 	var session Session
-	if err := s.request(ctx, http.MethodPut, path, requestOptions{
-		params: params,
-		json:   body,
+	if err := s.request(ctx, http.MethodPut, path, RequestOptions{
+		Params: params,
+		JSON:   body,
 	}, &session); err != nil {
 		return nil, err
 	}
@@ -149,7 +145,7 @@ func (s *Sessions) Update(ctx context.Context, agentID string, lookup SessionLoo
 
 // Delete deletes a session matched by external ID or labels.
 func (s *Sessions) Delete(ctx context.Context, agentID string, lookup SessionLookup) error {
-	params, err := s.requireLookup(lookup)
+	params, err := s.RequireLookup(lookup)
 	if err != nil {
 		return err
 	}
@@ -157,5 +153,5 @@ func (s *Sessions) Delete(ctx context.Context, agentID string, lookup SessionLoo
 	if err != nil {
 		return err
 	}
-	return s.request(ctx, http.MethodDelete, path, requestOptions{params: params}, nil)
+	return s.request(ctx, http.MethodDelete, path, RequestOptions{Params: params}, nil)
 }

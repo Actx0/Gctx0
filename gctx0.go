@@ -57,7 +57,7 @@ func NewClient(opts ...Option) *Client {
 // Health checks API health.
 func (c *Client) Health(ctx context.Context) (map[string]any, error) {
 	var out map[string]any
-	if err := c.request(ctx, http.MethodGet, "/api/v1/_health", requestOptions{}, &out); err != nil {
+	if err := c.request(ctx, http.MethodGet, "/api/v1/_health", RequestOptions{}, &out); err != nil {
 		return nil, err
 	}
 	return out, nil

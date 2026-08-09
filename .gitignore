@@ -14,3 +14,4 @@ vendor/
 *.swp
 
 .DS_Store
+.cursor

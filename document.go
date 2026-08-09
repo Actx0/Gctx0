@@ -5,8 +5,13 @@ package gctx0
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sort"
 )
 
@@ -28,18 +33,58 @@ func NewKnowledge(opts ...Option) *Documents {
 	return NewDocuments(opts...)
 }
 
+type PreparedFile struct {
+	Filename    string
+	Content     []byte
+	ContentType string
+}
+
+func PrepareFile(file any) (PreparedFile, error) {
+	switch v := file.(type) {
+	case string:
+		content, err := os.ReadFile(v)
+		if err != nil {
+			return PreparedFile{}, err
+		}
+		contentType := "text/plain"
+		if filepath.Ext(v) == ".md" {
+			contentType = "text/markdown"
+		}
+		return PreparedFile{
+			Filename:    filepath.Base(v),
+			Content:     content,
+			ContentType: contentType,
+		}, nil
+	case FileBytes:
+		contentType := v.ContentType
+		if contentType == "" {
+			contentType = "application/octet-stream"
+		}
+		return PreparedFile{
+			Filename:    v.Filename,
+			Content:     v.Content,
+			ContentType: contentType,
+		}, nil
+	case PreparedFile:
+		return v, nil
+	default:
+		return PreparedFile{}, fmt.Errorf("unsupported file input type %T", file)
+	}
+}
+
+func FileChecksum(content []byte) string {
+	sum := sha256.Sum256(content)
+	return hex.EncodeToString(sum[:])
+}
+
 // List returns workspace documents.
 func (d *Documents) List(ctx context.Context, limit, offset int) (*DocumentList, error) {
-	params, err := buildQueryParams(QueryParams{Limit: intPtr(limit), Offset: intPtr(offset)})
-	if err != nil {
-		return nil, err
-	}
 	path, err := d.workspacePath("documents")
 	if err != nil {
 		return nil, err
 	}
-	var raw documentListResponse
-	if err := d.request(ctx, http.MethodGet, path, requestOptions{params: params}, &raw); err != nil {
+	var raw DocumentListResponse
+	if err := d.request(ctx, http.MethodGet, path, RequestOptions{Params: PageParams(limit, offset)}, &raw); err != nil {
 		return nil, err
 	}
 	return &DocumentList{
@@ -125,9 +170,9 @@ func (d *Documents) Upload(ctx context.Context, file any, title string, labels m
 		form["labels"] = string(b)
 	}
 	var doc Document
-	if err := d.request(ctx, http.MethodPost, path, requestOptions{
-		form: form,
-		file: &prepared,
+	if err := d.request(ctx, http.MethodPost, path, RequestOptions{
+		Form: form,
+		File: &prepared,
 	}, &doc); err != nil {
 		return nil, err
 	}
@@ -145,7 +190,7 @@ func (d *Documents) Search(ctx context.Context, query string, labels map[string]
 		body["labels"] = labels
 	}
 	var results SearchResults
-	if err := d.request(ctx, http.MethodPost, path, requestOptions{json: body}, &results); err != nil {
+	if err := d.request(ctx, http.MethodPost, path, RequestOptions{JSON: body}, &results); err != nil {
 		return nil, err
 	}
 	return &results, nil
@@ -157,5 +202,5 @@ func (d *Documents) Delete(ctx context.Context, documentID string) error {
 	if err != nil {
 		return err
 	}
-	return d.request(ctx, http.MethodDelete, path, requestOptions{}, nil)
+	return d.request(ctx, http.MethodDelete, path, RequestOptions{}, nil)
 }

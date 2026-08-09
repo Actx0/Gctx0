@@ -20,16 +20,12 @@ func NewAgents(opts ...Option) *Agents {
 
 // List returns workspace agents.
 func (a *Agents) List(ctx context.Context, limit, offset int) (*AgentList, error) {
-	params, err := buildQueryParams(QueryParams{Limit: intPtr(limit), Offset: intPtr(offset)})
-	if err != nil {
-		return nil, err
-	}
 	path, err := a.workspacePath("agents")
 	if err != nil {
 		return nil, err
 	}
-	var raw agentListResponse
-	if err := a.request(ctx, http.MethodGet, path, requestOptions{params: params}, &raw); err != nil {
+	var raw AgentListResponse
+	if err := a.request(ctx, http.MethodGet, path, RequestOptions{Params: PageParams(limit, offset)}, &raw); err != nil {
 		return nil, err
 	}
 	return &AgentList{
@@ -47,7 +43,7 @@ func (a *Agents) Get(ctx context.Context, agentID string) (*Agent, error) {
 		return nil, err
 	}
 	var agent Agent
-	if err := a.request(ctx, http.MethodGet, path, requestOptions{}, &agent); err != nil {
+	if err := a.request(ctx, http.MethodGet, path, RequestOptions{}, &agent); err != nil {
 		return nil, err
 	}
 	return &agent, nil
@@ -60,8 +56,8 @@ func (a *Agents) Create(ctx context.Context, name, description string) (*Agent, 
 		return nil, err
 	}
 	var agent Agent
-	if err := a.request(ctx, http.MethodPost, path, requestOptions{
-		json: map[string]string{"name": name, "description": description},
+	if err := a.request(ctx, http.MethodPost, path, RequestOptions{
+		JSON: map[string]string{"name": name, "description": description},
 	}, &agent); err != nil {
 		return nil, err
 	}
@@ -75,8 +71,8 @@ func (a *Agents) Update(ctx context.Context, agentID, name, description string) 
 		return nil, err
 	}
 	var agent Agent
-	if err := a.request(ctx, http.MethodPut, path, requestOptions{
-		json: map[string]string{"name": name, "description": description},
+	if err := a.request(ctx, http.MethodPut, path, RequestOptions{
+		JSON: map[string]string{"name": name, "description": description},
 	}, &agent); err != nil {
 		return nil, err
 	}
@@ -89,5 +85,5 @@ func (a *Agents) Delete(ctx context.Context, agentID string) error {
 	if err != nil {
 		return err
 	}
-	return a.request(ctx, http.MethodDelete, path, requestOptions{}, nil)
+	return a.request(ctx, http.MethodDelete, path, RequestOptions{}, nil)
 }
