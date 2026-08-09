@@ -1,6 +1,6 @@
 module github.com/Actx0/Gctx0
 
-go 1.22
+go 1.25
 
 require (
 	github.com/go-resty/resty/v2 v2.16.5

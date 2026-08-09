@@ -38,7 +38,7 @@ body:
     id: go-version
     attributes:
       label: Go version
-      placeholder: go1.22.x
+      placeholder: go1.25.x
     validations:
       required: true
   - type: input
