@@ -22,7 +22,7 @@ import (
 func main() {
 	client := gctx0.NewKnowledge(
 		gctx0.WithAccessKey("your-access-key"),
-		gctx0.WithWorkspaceID("your-workspace-id"),
+		gctx0.WithWorkspaceId("your-workspace-id"),
 	)
 	defer client.Close()
 
@@ -35,7 +35,7 @@ Or use the full client when you need multiple API areas:
 ```go
 client := gctx0.NewClient(
 	gctx0.WithAccessKey("your-access-key"),
-	gctx0.WithWorkspaceID("your-workspace-id"),
+	gctx0.WithWorkspaceId("your-workspace-id"),
 )
 defer client.Close()
 

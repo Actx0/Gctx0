@@ -40,7 +40,7 @@ type Setup struct {
 func NewClient() *gctx0.Client {
 	return gctx0.NewClient(
 		gctx0.WithAccessKey(AccessKey),
-		gctx0.WithWorkspaceID(WorkspaceID),
+		gctx0.WithWorkspaceId(WorkspaceID),
 		gctx0.WithBaseURL(BaseURL),
 	)
 }

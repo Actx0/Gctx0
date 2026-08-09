@@ -19,7 +19,7 @@ func testClient(t *testing.T) (*Client, context.Context) {
 	client := NewClient(
 		WithBaseURL(baseURL),
 		WithAccessKey(defaultWorkspaceAccessKey),
-		WithWorkspaceID(defaultWorkspaceID),
+		WithWorkspaceId(defaultWorkspaceID),
 	)
 	t.Cleanup(client.Close)
 	return client, context.Background()
@@ -58,7 +58,7 @@ func TestMeInvalidAccessKey(t *testing.T) {
 	client := NewClient(
 		WithBaseURL(baseURL),
 		WithAccessKey("bad-access-key"),
-		WithWorkspaceID(defaultWorkspaceID),
+		WithWorkspaceId(defaultWorkspaceID),
 	)
 	defer client.Close()
 

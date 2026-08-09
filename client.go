@@ -50,8 +50,8 @@ func WithAccessKey(accessKey string) Option {
 	return func(c *config) { c.accessKey = accessKey }
 }
 
-// WithWorkspaceID sets the workspace used for workspace-scoped routes.
-func WithWorkspaceID(workspaceId string) Option {
+// WithWorkspaceId sets the workspace used for workspace-scoped routes.
+func WithWorkspaceId(workspaceId string) Option {
 	return func(c *config) { c.workspaceId = workspaceId }
 }
 

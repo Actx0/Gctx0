@@ -87,7 +87,7 @@ func TestKnowledge(t *testing.T) {
 		client := NewKnowledge(
 			WithBaseURL(baseURL),
 			WithAccessKey(defaultWorkspaceAccessKey),
-			WithWorkspaceID(defaultWorkspaceID),
+			WithWorkspaceId(defaultWorkspaceID),
 		)
 		defer client.Close()
 
