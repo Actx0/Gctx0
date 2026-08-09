@@ -22,7 +22,7 @@ type Sessions struct {
 
 // NewSessions creates a standalone sessions client.
 func NewSessions(opts ...Option) *Sessions {
-	return &Sessions{Resource: newResource(opts...)}
+	return &Sessions{Resource: NewResource(opts...)}
 }
 
 func (s *Sessions) RequireLookup(lookup SessionLookup) (map[string]string, error) {
@@ -43,7 +43,7 @@ func (s *Sessions) Create(ctx context.Context, agentID string, lookup SessionLoo
 		return nil, err
 	}
 
-	path, err := s.agentPath(agentID, "sessions")
+	path, err := s.AgentPath(agentID, "sessions")
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (s *Sessions) Create(ctx context.Context, agentID string, lookup SessionLoo
 		body = map[string]string{"title": title}
 	}
 	var session Session
-	if err := s.request(ctx, http.MethodPost, path, RequestOptions{
+	if err := s.Request(ctx, http.MethodPost, path, RequestOptions{
 		Params: params,
 		JSON:   body,
 	}, &session); err != nil {
@@ -70,12 +70,12 @@ func (s *Sessions) List(ctx context.Context, agentID string, lookup SessionLooku
 	for key, value := range PageParams(limit, offset) {
 		params[key] = value
 	}
-	path, err := s.agentPath(agentID, "sessions")
+	path, err := s.AgentPath(agentID, "sessions")
 	if err != nil {
 		return nil, err
 	}
 	var raw SessionListResponse
-	if err := s.request(ctx, http.MethodGet, path, RequestOptions{Params: params}, &raw); err != nil {
+	if err := s.Request(ctx, http.MethodGet, path, RequestOptions{Params: params}, &raw); err != nil {
 		return nil, err
 	}
 	return &SessionList{
@@ -88,12 +88,12 @@ func (s *Sessions) List(ctx context.Context, agentID string, lookup SessionLooku
 
 // Get returns a session by ID.
 func (s *Sessions) Get(ctx context.Context, agentID, sessionID string) (*Session, error) {
-	path, err := s.agentPath(agentID, "sessions", sessionID)
+	path, err := s.AgentPath(agentID, "sessions", sessionID)
 	if err != nil {
 		return nil, err
 	}
 	var session Session
-	if err := s.request(ctx, http.MethodGet, path, RequestOptions{}, &session); err != nil {
+	if err := s.Request(ctx, http.MethodGet, path, RequestOptions{}, &session); err != nil {
 		return nil, err
 	}
 	return &session, nil
@@ -105,12 +105,12 @@ func (s *Sessions) GetByLabels(ctx context.Context, agentID string, lookup Sessi
 	if err != nil {
 		return nil, err
 	}
-	path, err := s.agentPath(agentID, "sessions", "by-labels")
+	path, err := s.AgentPath(agentID, "sessions", "by-labels")
 	if err != nil {
 		return nil, err
 	}
 	var session Session
-	if err := s.request(ctx, http.MethodGet, path, RequestOptions{Params: params}, &session); err != nil {
+	if err := s.Request(ctx, http.MethodGet, path, RequestOptions{Params: params}, &session); err != nil {
 		return nil, err
 	}
 	return &session, nil
@@ -122,7 +122,7 @@ func (s *Sessions) Update(ctx context.Context, agentID string, lookup SessionLoo
 	if err != nil {
 		return nil, err
 	}
-	path, err := s.agentPath(agentID, "sessions", "by-labels")
+	path, err := s.AgentPath(agentID, "sessions", "by-labels")
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (s *Sessions) Update(ctx context.Context, agentID string, lookup SessionLoo
 		body["labels"] = newLabels
 	}
 	var session Session
-	if err := s.request(ctx, http.MethodPut, path, RequestOptions{
+	if err := s.Request(ctx, http.MethodPut, path, RequestOptions{
 		Params: params,
 		JSON:   body,
 	}, &session); err != nil {
@@ -149,9 +149,9 @@ func (s *Sessions) Delete(ctx context.Context, agentID string, lookup SessionLoo
 	if err != nil {
 		return err
 	}
-	path, err := s.agentPath(agentID, "sessions", "by-labels")
+	path, err := s.AgentPath(agentID, "sessions", "by-labels")
 	if err != nil {
 		return err
 	}
-	return s.request(ctx, http.MethodDelete, path, RequestOptions{Params: params}, nil)
+	return s.Request(ctx, http.MethodDelete, path, RequestOptions{Params: params}, nil)
 }

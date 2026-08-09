@@ -69,7 +69,7 @@ type BaseClient struct {
 	resty       *resty.Client
 }
 
-func newBaseClient(opts ...Option) *BaseClient {
+func NewBaseClient(opts ...Option) *BaseClient {
 	cfg := defaultConfig()
 	for _, opt := range opts {
 		opt(&cfg)
@@ -95,14 +95,6 @@ func newBaseClient(opts ...Option) *BaseClient {
 	}
 }
 
-func (c *BaseClient) copyFrom(parent *BaseClient) {
-	c.baseURL = parent.baseURL
-	c.timeout = parent.timeout
-	c.accessKey = parent.accessKey
-	c.workspaceId = parent.workspaceId
-	c.resty = parent.resty
-}
-
 type RequestOptions struct {
 	Params  map[string]string
 	JSON    any
@@ -111,7 +103,7 @@ type RequestOptions struct {
 	Headers map[string]string
 }
 
-func (c *BaseClient) request(ctx context.Context, method, path string, opts RequestOptions, out any) error {
+func (c *BaseClient) Request(ctx context.Context, method, path string, opts RequestOptions, out any) error {
 	if c.accessKey == "" {
 		return fmt.Errorf("access_key is required")
 	}
@@ -175,26 +167,19 @@ type Resource struct {
 	*BaseClient
 }
 
-func newResource(opts ...Option) Resource {
-	return Resource{BaseClient: newBaseClient(opts...)}
+func NewResource(opts ...Option) Resource {
+	return Resource{BaseClient: NewBaseClient(opts...)}
 }
 
-func (r *Resource) attachTo(parent *BaseClient) {
-	if r.BaseClient == nil {
-		r.BaseClient = &BaseClient{}
-	}
-	r.copyFrom(parent)
-}
-
-func (r *Resource) requireWorkspace() (string, error) {
+func (r *Resource) RequireWorkspace() (string, error) {
 	if r.workspaceId == "" {
 		return "", fmt.Errorf("workspace_id is required")
 	}
 	return r.workspaceId, nil
 }
 
-func (r *Resource) workspacePath(parts ...string) (string, error) {
-	ws, err := r.requireWorkspace()
+func (r *Resource) WorkspacePath(parts ...string) (string, error) {
+	ws, err := r.RequireWorkspace()
 	if err != nil {
 		return "", err
 	}
@@ -205,7 +190,7 @@ func (r *Resource) workspacePath(parts ...string) (string, error) {
 	return path, nil
 }
 
-func (r *Resource) agentPath(agentID string, parts ...string) (string, error) {
+func (r *Resource) AgentPath(agentID string, parts ...string) (string, error) {
 	all := append([]string{"agents", agentID}, parts...)
-	return r.workspacePath(all...)
+	return r.WorkspacePath(all...)
 }

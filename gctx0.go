@@ -24,40 +24,27 @@ type Client struct {
 
 // NewClient creates a full Actx0 client.
 func NewClient(opts ...Option) *Client {
-	base := newBaseClient(opts...)
-
-	agent := &Agents{}
-	agent.attachTo(base)
-	document := &Documents{}
-	document.attachTo(base)
-	me := &Me{}
-	me.attachTo(base)
-	memory := &Memories{}
-	memory.attachTo(base)
-	message := &Messages{}
-	message.attachTo(base)
-	prompt := &Prompts{}
-	prompt.attachTo(base)
-	session := &Sessions{}
-	session.attachTo(base)
+	base := NewBaseClient(opts...)
+	res := Resource{BaseClient: base}
+	document := &Documents{Resource: res}
 
 	return &Client{
 		BaseClient: base,
-		Agent:      agent,
+		Agent:      &Agents{Resource: res},
 		Document:   document,
 		Knowledge:  document,
-		Me:         me,
-		Memory:     memory,
-		Message:    message,
-		Prompt:     prompt,
-		Session:    session,
+		Me:         &Me{Resource: res},
+		Memory:     &Memories{Resource: res},
+		Message:    &Messages{Resource: res},
+		Prompt:     &Prompts{Resource: res},
+		Session:    &Sessions{Resource: res},
 	}
 }
 
 // Health checks API health.
 func (c *Client) Health(ctx context.Context) (map[string]any, error) {
 	var out map[string]any
-	if err := c.request(ctx, http.MethodGet, "/api/v1/_health", RequestOptions{}, &out); err != nil {
+	if err := c.Request(ctx, http.MethodGet, "/api/v1/_health", RequestOptions{}, &out); err != nil {
 		return nil, err
 	}
 	return out, nil

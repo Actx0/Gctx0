@@ -81,17 +81,17 @@ type Prompts struct {
 
 // NewPrompts creates a standalone prompts client.
 func NewPrompts(opts ...Option) *Prompts {
-	return &Prompts{Resource: newResource(opts...)}
+	return &Prompts{Resource: NewResource(opts...)}
 }
 
 // List returns workspace prompts.
 func (p *Prompts) List(ctx context.Context, limit, offset int) (*PromptList, error) {
-	path, err := p.workspacePath("prompts")
+	path, err := p.WorkspacePath("prompts")
 	if err != nil {
 		return nil, err
 	}
 	var raw PromptListResponse
-	if err := p.request(ctx, http.MethodGet, path, RequestOptions{Params: PageParams(limit, offset)}, &raw); err != nil {
+	if err := p.Request(ctx, http.MethodGet, path, RequestOptions{Params: PageParams(limit, offset)}, &raw); err != nil {
 		return nil, err
 	}
 	return &PromptList{
@@ -110,12 +110,12 @@ func (p *Prompts) Create(ctx context.Context, name string, typ PromptType, conte
 	if err != nil {
 		return nil, err
 	}
-	path, err := p.workspacePath("prompts")
+	path, err := p.WorkspacePath("prompts")
 	if err != nil {
 		return nil, err
 	}
 	var info PromptInfo
-	if err := p.request(ctx, http.MethodPost, path, RequestOptions{JSON: body}, &info); err != nil {
+	if err := p.Request(ctx, http.MethodPost, path, RequestOptions{JSON: body}, &info); err != nil {
 		return nil, err
 	}
 	return &info, nil
@@ -123,12 +123,12 @@ func (p *Prompts) Create(ctx context.Context, name string, typ PromptType, conte
 
 // Get returns prompt info by ID.
 func (p *Prompts) Get(ctx context.Context, promptID string) (*PromptInfo, error) {
-	path, err := p.workspacePath("prompts", promptID)
+	path, err := p.WorkspacePath("prompts", promptID)
 	if err != nil {
 		return nil, err
 	}
 	var info PromptInfo
-	if err := p.request(ctx, http.MethodGet, path, RequestOptions{}, &info); err != nil {
+	if err := p.Request(ctx, http.MethodGet, path, RequestOptions{}, &info); err != nil {
 		return nil, err
 	}
 	return &info, nil
@@ -136,16 +136,16 @@ func (p *Prompts) Get(ctx context.Context, promptID string) (*PromptInfo, error)
 
 // Delete deletes a prompt.
 func (p *Prompts) Delete(ctx context.Context, promptID string) error {
-	path, err := p.workspacePath("prompts", promptID)
+	path, err := p.WorkspacePath("prompts", promptID)
 	if err != nil {
 		return err
 	}
-	return p.request(ctx, http.MethodDelete, path, RequestOptions{}, nil)
+	return p.Request(ctx, http.MethodDelete, path, RequestOptions{}, nil)
 }
 
 // GetByName returns a prompt version by handle.
 func (p *Prompts) GetByName(ctx context.Context, name string, version string) (*Prompt, error) {
-	path, err := p.workspacePath("promptsByName", name)
+	path, err := p.WorkspacePath("promptsByName", name)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ func (p *Prompts) GetByName(ctx context.Context, name string, version string) (*
 		params["version"] = version
 	}
 	var raw json.RawMessage
-	if err := p.request(ctx, http.MethodGet, path, RequestOptions{Params: params}, &raw); err != nil {
+	if err := p.Request(ctx, http.MethodGet, path, RequestOptions{Params: params}, &raw); err != nil {
 		return nil, err
 	}
 	prompt, err := normalizePrompt(raw)
@@ -166,12 +166,12 @@ func (p *Prompts) GetByName(ctx context.Context, name string, version string) (*
 
 // ListVersions returns prompt versions.
 func (p *Prompts) ListVersions(ctx context.Context, promptID string, limit, offset int) (*PromptVersionList, error) {
-	path, err := p.workspacePath("prompts", promptID, "versions")
+	path, err := p.WorkspacePath("prompts", promptID, "versions")
 	if err != nil {
 		return nil, err
 	}
 	var raw PromptVersionListResponse
-	if err := p.request(ctx, http.MethodGet, path, RequestOptions{Params: PageParams(limit, offset)}, &raw); err != nil {
+	if err := p.Request(ctx, http.MethodGet, path, RequestOptions{Params: PageParams(limit, offset)}, &raw); err != nil {
 		return nil, err
 	}
 	versions := make([]Prompt, 0, len(raw.Versions))
@@ -193,12 +193,12 @@ func (p *Prompts) CreateVersion(ctx context.Context, promptID string, typ Prompt
 	if err != nil {
 		return nil, err
 	}
-	path, err := p.workspacePath("prompts", promptID, "versions")
+	path, err := p.WorkspacePath("prompts", promptID, "versions")
 	if err != nil {
 		return nil, err
 	}
 	var raw json.RawMessage
-	if err := p.request(ctx, http.MethodPost, path, RequestOptions{JSON: body}, &raw); err != nil {
+	if err := p.Request(ctx, http.MethodPost, path, RequestOptions{JSON: body}, &raw); err != nil {
 		return nil, err
 	}
 	prompt, err := normalizePrompt(raw)
@@ -210,12 +210,12 @@ func (p *Prompts) CreateVersion(ctx context.Context, promptID string, typ Prompt
 
 // GetVersion returns a prompt version by ID.
 func (p *Prompts) GetVersion(ctx context.Context, promptID, versionID string) (*Prompt, error) {
-	path, err := p.workspacePath("prompts", promptID, "versions", versionID)
+	path, err := p.WorkspacePath("prompts", promptID, "versions", versionID)
 	if err != nil {
 		return nil, err
 	}
 	var raw json.RawMessage
-	if err := p.request(ctx, http.MethodGet, path, RequestOptions{}, &raw); err != nil {
+	if err := p.Request(ctx, http.MethodGet, path, RequestOptions{}, &raw); err != nil {
 		return nil, err
 	}
 	prompt, err := normalizePrompt(raw)
@@ -231,12 +231,12 @@ func (p *Prompts) UpdateVersion(ctx context.Context, promptID, versionID, conten
 	if err != nil {
 		return nil, err
 	}
-	path, err := p.workspacePath("prompts", promptID, "versions", versionID)
+	path, err := p.WorkspacePath("prompts", promptID, "versions", versionID)
 	if err != nil {
 		return nil, err
 	}
 	var raw json.RawMessage
-	if err := p.request(ctx, http.MethodPut, path, RequestOptions{JSON: body}, &raw); err != nil {
+	if err := p.Request(ctx, http.MethodPut, path, RequestOptions{JSON: body}, &raw); err != nil {
 		return nil, err
 	}
 	prompt, err := normalizePrompt(raw)
@@ -248,11 +248,11 @@ func (p *Prompts) UpdateVersion(ctx context.Context, promptID, versionID, conten
 
 // DeleteVersion deletes a prompt version.
 func (p *Prompts) DeleteVersion(ctx context.Context, promptID, versionID string) error {
-	path, err := p.workspacePath("prompts", promptID, "versions", versionID)
+	path, err := p.WorkspacePath("prompts", promptID, "versions", versionID)
 	if err != nil {
 		return err
 	}
-	return p.request(ctx, http.MethodDelete, path, RequestOptions{}, nil)
+	return p.Request(ctx, http.MethodDelete, path, RequestOptions{}, nil)
 }
 
 // Compile replaces {{var}} placeholders in prompt content.

@@ -32,13 +32,13 @@ type Me struct {
 
 // NewMe creates a standalone me client.
 func NewMe(opts ...Option) *Me {
-	return &Me{Resource: newResource(opts...)}
+	return &Me{Resource: NewResource(opts...)}
 }
 
 // Get returns the current principal for the access key.
 func (m *Me) Get(ctx context.Context) (*MePrincipal, error) {
 	var principal MePrincipal
-	if err := m.request(ctx, http.MethodGet, "/api/v1/me", RequestOptions{}, &principal); err != nil {
+	if err := m.Request(ctx, http.MethodGet, "/api/v1/me", RequestOptions{}, &principal); err != nil {
 		return nil, err
 	}
 	return &principal, nil

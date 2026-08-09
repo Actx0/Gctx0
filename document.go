@@ -25,7 +25,7 @@ type Knowledge = Documents
 
 // NewDocuments creates a standalone documents client.
 func NewDocuments(opts ...Option) *Documents {
-	return &Documents{Resource: newResource(opts...)}
+	return &Documents{Resource: NewResource(opts...)}
 }
 
 // NewKnowledge creates a standalone documents client.
@@ -79,12 +79,12 @@ func FileChecksum(content []byte) string {
 
 // List returns workspace documents.
 func (d *Documents) List(ctx context.Context, limit, offset int) (*DocumentList, error) {
-	path, err := d.workspacePath("documents")
+	path, err := d.WorkspacePath("documents")
 	if err != nil {
 		return nil, err
 	}
 	var raw DocumentListResponse
-	if err := d.request(ctx, http.MethodGet, path, RequestOptions{Params: PageParams(limit, offset)}, &raw); err != nil {
+	if err := d.Request(ctx, http.MethodGet, path, RequestOptions{Params: PageParams(limit, offset)}, &raw); err != nil {
 		return nil, err
 	}
 	return &DocumentList{
@@ -148,7 +148,7 @@ func (d *Documents) Upload(ctx context.Context, file any, title string, labels m
 	if err != nil {
 		return nil, err
 	}
-	path, err := d.workspacePath("documents")
+	path, err := d.WorkspacePath("documents")
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +170,7 @@ func (d *Documents) Upload(ctx context.Context, file any, title string, labels m
 		form["labels"] = string(b)
 	}
 	var doc Document
-	if err := d.request(ctx, http.MethodPost, path, RequestOptions{
+	if err := d.Request(ctx, http.MethodPost, path, RequestOptions{
 		Form: form,
 		File: &prepared,
 	}, &doc); err != nil {
@@ -181,7 +181,7 @@ func (d *Documents) Upload(ctx context.Context, file any, title string, labels m
 
 // Search searches documents.
 func (d *Documents) Search(ctx context.Context, query string, labels map[string]string, limit int) (*SearchResults, error) {
-	path, err := d.workspacePath("documents", "search")
+	path, err := d.WorkspacePath("documents", "search")
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +190,7 @@ func (d *Documents) Search(ctx context.Context, query string, labels map[string]
 		body["labels"] = labels
 	}
 	var results SearchResults
-	if err := d.request(ctx, http.MethodPost, path, RequestOptions{JSON: body}, &results); err != nil {
+	if err := d.Request(ctx, http.MethodPost, path, RequestOptions{JSON: body}, &results); err != nil {
 		return nil, err
 	}
 	return &results, nil
@@ -198,9 +198,9 @@ func (d *Documents) Search(ctx context.Context, query string, labels map[string]
 
 // Delete deletes a document.
 func (d *Documents) Delete(ctx context.Context, documentID string) error {
-	path, err := d.workspacePath("documents", documentID)
+	path, err := d.WorkspacePath("documents", documentID)
 	if err != nil {
 		return err
 	}
-	return d.request(ctx, http.MethodDelete, path, RequestOptions{}, nil)
+	return d.Request(ctx, http.MethodDelete, path, RequestOptions{}, nil)
 }
