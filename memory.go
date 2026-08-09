@@ -8,6 +8,65 @@ import (
 	"net/http"
 )
 
+// MemoryKind is the kind of a session memory.
+type MemoryKind string
+
+const (
+	MemoryKindSummary    MemoryKind = "summary"
+	MemoryKindFact       MemoryKind = "fact"
+	MemoryKindPreference MemoryKind = "preference"
+)
+
+// MemoryInput is a memory create payload.
+type MemoryInput struct {
+	Kind    MemoryKind     `json:"kind"`
+	Content string         `json:"content"`
+	Meta    map[string]any `json:"meta,omitempty"`
+}
+
+// Memory is a session memory.
+type Memory struct {
+	ID        string         `json:"id"`
+	SessionID string         `json:"sessionId"`
+	Kind      MemoryKind     `json:"kind"`
+	Content   string         `json:"content"`
+	Meta      map[string]any `json:"meta"`
+	CreatedAt string         `json:"createdAt"`
+	UpdatedAt string         `json:"updatedAt"`
+}
+
+// MemoryList is a paginated memory list.
+type MemoryList struct {
+	Memories []Memory `json:"memories"`
+	Limit    int      `json:"-"`
+	Offset   int      `json:"-"`
+	Total    int      `json:"-"`
+}
+
+// MemoryListResponse is the API list envelope.
+type MemoryListResponse struct {
+	Memories []Memory `json:"memories"`
+	Meta     ListMeta `json:"_meta"`
+}
+
+// MemorySearchHit is a memory search result.
+type MemorySearchHit struct {
+	ID    string     `json:"id"`
+	Kind  MemoryKind `json:"kind"`
+	Score float64    `json:"score"`
+	Text  string     `json:"text"`
+}
+
+// MemorySearchResults holds memory search hits.
+type MemorySearchResults struct {
+	Results []MemorySearchHit `json:"results"`
+}
+
+// MemoryBatchResponse is the API batch create envelope.
+type MemoryBatchResponse struct {
+	Memories []Memory `json:"memories"`
+}
+
 // Memories is the session memory API client.
 type Memories struct {
 	Resource
@@ -24,10 +83,12 @@ func (m *Memories) List(ctx context.Context, agentID, sessionID string, limit, o
 	if err != nil {
 		return nil, err
 	}
+
 	var raw MemoryListResponse
 	if err := m.Request(ctx, http.MethodGet, path, RequestOptions{Params: PageParams(limit, offset)}, &raw); err != nil {
 		return nil, err
 	}
+
 	return &MemoryList{
 		Memories: raw.Memories,
 		Limit:    raw.Meta.Limit,
@@ -42,10 +103,12 @@ func (m *Memories) Get(ctx context.Context, agentID, sessionID, memoryID string)
 	if err != nil {
 		return nil, err
 	}
+
 	var memory Memory
 	if err := m.Request(ctx, http.MethodGet, path, RequestOptions{}, &memory); err != nil {
 		return nil, err
 	}
+
 	return &memory, nil
 }
 
@@ -55,12 +118,14 @@ func (m *Memories) Search(ctx context.Context, agentID, sessionID, query string,
 	if err != nil {
 		return nil, err
 	}
+
 	var results MemorySearchResults
 	if err := m.Request(ctx, http.MethodPost, path, RequestOptions{
 		JSON: map[string]any{"query": query, "limit": limit},
 	}, &results); err != nil {
 		return nil, err
 	}
+
 	return &results, nil
 }
 
@@ -70,12 +135,14 @@ func (m *Memories) Create(ctx context.Context, agentID, sessionID string, memory
 	if err != nil {
 		return nil, err
 	}
+
 	var created Memory
 	if err := m.Request(ctx, http.MethodPost, path, RequestOptions{
 		JSON: EncodeMemoryItem(memory),
 	}, &created); err != nil {
 		return nil, err
 	}
+
 	return &created, nil
 }
 
@@ -85,12 +152,14 @@ func (m *Memories) CreateBatch(ctx context.Context, agentID, sessionID string, m
 	if err != nil {
 		return nil, err
 	}
+
 	var raw MemoryBatchResponse
 	if err := m.Request(ctx, http.MethodPost, path, RequestOptions{
 		JSON: MemoryBatchPayload(memories),
 	}, &raw); err != nil {
 		return nil, err
 	}
+
 	return raw.Memories, nil
 }
 
@@ -100,16 +169,19 @@ func (m *Memories) Update(ctx context.Context, agentID, sessionID, memoryID, con
 	if err != nil {
 		return nil, err
 	}
+
 	fields := map[string]string{}
 	if kind != "" {
 		fields["kind"] = string(kind)
 	}
+
 	var updated Memory
 	if err := m.Request(ctx, http.MethodPut, path, RequestOptions{
 		JSON: EncodeUpdateBody(content, meta, fields),
 	}, &updated); err != nil {
 		return nil, err
 	}
+
 	return &updated, nil
 }
 
@@ -119,6 +191,7 @@ func (m *Memories) Delete(ctx context.Context, agentID, sessionID, memoryID stri
 	if err != nil {
 		return err
 	}
+
 	return m.Request(ctx, http.MethodDelete, path, RequestOptions{}, nil)
 }
 
@@ -128,6 +201,7 @@ func (m *Memories) DeleteBatch(ctx context.Context, agentID, sessionID string, i
 	if err != nil {
 		return err
 	}
+
 	return m.Request(ctx, http.MethodDelete, path, RequestOptions{
 		JSON: map[string]any{"ids": ids},
 	}, nil)

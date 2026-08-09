@@ -8,6 +8,64 @@ import (
 	"net/http"
 )
 
+// MessageRole is the role of a session message.
+type MessageRole string
+
+const (
+	MessageRoleSystem    MessageRole = "system"
+	MessageRoleUser      MessageRole = "user"
+	MessageRoleAssistant MessageRole = "assistant"
+)
+
+// MessageInput is a message create payload.
+type MessageInput struct {
+	Role    MessageRole    `json:"role"`
+	Content string         `json:"content"`
+	Meta    map[string]any `json:"meta,omitempty"`
+}
+
+// Message is a session message.
+type Message struct {
+	ID        string         `json:"id"`
+	SessionID string         `json:"sessionId"`
+	Role      MessageRole    `json:"role"`
+	Content   string         `json:"content"`
+	Meta      map[string]any `json:"meta"`
+	CreatedAt string         `json:"createdAt"`
+}
+
+// MessageList is a paginated message list.
+type MessageList struct {
+	Messages []Message `json:"messages"`
+	Limit    int       `json:"-"`
+	Offset   int       `json:"-"`
+	Total    int       `json:"-"`
+}
+
+// MessageListResponse is the API list envelope.
+type MessageListResponse struct {
+	Messages []Message `json:"messages"`
+	Meta     ListMeta  `json:"_meta"`
+}
+
+// MessageSearchHit is a message search result.
+type MessageSearchHit struct {
+	ID    string      `json:"id"`
+	Role  MessageRole `json:"role"`
+	Score float64     `json:"score"`
+	Text  string      `json:"text"`
+}
+
+// MessageSearchResults holds message search hits.
+type MessageSearchResults struct {
+	Results []MessageSearchHit `json:"results"`
+}
+
+// MessageBatchResponse is the API batch create envelope.
+type MessageBatchResponse struct {
+	Messages []Message `json:"messages"`
+}
+
 // Messages is the session message API client.
 type Messages struct {
 	Resource
@@ -24,10 +82,12 @@ func (m *Messages) List(ctx context.Context, agentID, sessionID string, limit, o
 	if err != nil {
 		return nil, err
 	}
+
 	var raw MessageListResponse
 	if err := m.Request(ctx, http.MethodGet, path, RequestOptions{Params: PageParams(limit, offset)}, &raw); err != nil {
 		return nil, err
 	}
+
 	return &MessageList{
 		Messages: raw.Messages,
 		Limit:    raw.Meta.Limit,
@@ -42,10 +102,12 @@ func (m *Messages) Get(ctx context.Context, agentID, sessionID, messageID string
 	if err != nil {
 		return nil, err
 	}
+
 	var message Message
 	if err := m.Request(ctx, http.MethodGet, path, RequestOptions{}, &message); err != nil {
 		return nil, err
 	}
+
 	return &message, nil
 }
 
@@ -55,12 +117,14 @@ func (m *Messages) Search(ctx context.Context, agentID, sessionID, query string,
 	if err != nil {
 		return nil, err
 	}
+
 	var results MessageSearchResults
 	if err := m.Request(ctx, http.MethodPost, path, RequestOptions{
 		JSON: map[string]any{"query": query, "limit": limit},
 	}, &results); err != nil {
 		return nil, err
 	}
+
 	return &results, nil
 }
 
@@ -70,12 +134,14 @@ func (m *Messages) Create(ctx context.Context, agentID, sessionID string, messag
 	if err != nil {
 		return nil, err
 	}
+
 	var created Message
 	if err := m.Request(ctx, http.MethodPost, path, RequestOptions{
 		JSON: EncodeMessageItem(message),
 	}, &created); err != nil {
 		return nil, err
 	}
+
 	return &created, nil
 }
 
@@ -85,12 +151,14 @@ func (m *Messages) CreateBatch(ctx context.Context, agentID, sessionID string, m
 	if err != nil {
 		return nil, err
 	}
+
 	var raw MessageBatchResponse
 	if err := m.Request(ctx, http.MethodPost, path, RequestOptions{
 		JSON: MessageBatchPayload(messages),
 	}, &raw); err != nil {
 		return nil, err
 	}
+
 	return raw.Messages, nil
 }
 
@@ -100,16 +168,19 @@ func (m *Messages) Update(ctx context.Context, agentID, sessionID, messageID, co
 	if err != nil {
 		return nil, err
 	}
+
 	fields := map[string]string{}
 	if role != "" {
 		fields["role"] = string(role)
 	}
+
 	var updated Message
 	if err := m.Request(ctx, http.MethodPut, path, RequestOptions{
 		JSON: EncodeUpdateBody(content, meta, fields),
 	}, &updated); err != nil {
 		return nil, err
 	}
+
 	return &updated, nil
 }
 
@@ -119,6 +190,7 @@ func (m *Messages) Delete(ctx context.Context, agentID, sessionID, messageID str
 	if err != nil {
 		return err
 	}
+
 	return m.Request(ctx, http.MethodDelete, path, RequestOptions{}, nil)
 }
 
@@ -128,6 +200,7 @@ func (m *Messages) DeleteBatch(ctx context.Context, agentID, sessionID string, i
 	if err != nil {
 		return err
 	}
+
 	return m.Request(ctx, http.MethodDelete, path, RequestOptions{
 		JSON: map[string]any{"ids": ids},
 	}, nil)

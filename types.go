@@ -3,12 +3,6 @@
 
 package gctx0
 
-// MemoryKind is the kind of a session memory.
-type MemoryKind string
-
-// MessageRole is the role of a session message.
-type MessageRole string
-
 // PromptType is the type of a prompt version.
 type PromptType string
 
@@ -16,14 +10,6 @@ type PromptType string
 type PromptStatus string
 
 const (
-	MemoryKindSummary    MemoryKind = "summary"
-	MemoryKindFact       MemoryKind = "fact"
-	MemoryKindPreference MemoryKind = "preference"
-
-	MessageRoleSystem    MessageRole = "system"
-	MessageRoleUser      MessageRole = "user"
-	MessageRoleAssistant MessageRole = "assistant"
-
 	PromptTypeText PromptType = "text"
 	PromptTypeChat PromptType = "chat"
 
@@ -36,20 +22,6 @@ type FileBytes struct {
 	Filename    string
 	Content     []byte
 	ContentType string
-}
-
-// MessageInput is a message create payload.
-type MessageInput struct {
-	Role    MessageRole    `json:"role"`
-	Content string         `json:"content"`
-	Meta    map[string]any `json:"meta,omitempty"`
-}
-
-// MemoryInput is a memory create payload.
-type MemoryInput struct {
-	Kind    MemoryKind     `json:"kind"`
-	Content string         `json:"content"`
-	Meta    map[string]any `json:"meta,omitempty"`
 }
 
 // Agent is a workspace agent.
@@ -78,106 +50,6 @@ type AgentList struct {
 type AgentListResponse struct {
 	Agents []Agent  `json:"agents"`
 	Meta   ListMeta `json:"_meta"`
-}
-
-// Session is an agent session.
-type Session struct {
-	ID          string            `json:"id"`
-	ExternalID  string            `json:"externalId"`
-	WorkspaceID string            `json:"workspaceId"`
-	AgentID     string            `json:"agentId"`
-	Title       string            `json:"title"`
-	Status      string            `json:"status"`
-	Labels      map[string]string `json:"labels"`
-	Meta        map[string]any    `json:"meta"`
-	CreatedAt   string            `json:"createdAt"`
-	UpdatedAt   string            `json:"updatedAt"`
-}
-
-// SessionList is a paginated session list.
-type SessionList struct {
-	Sessions []Session `json:"sessions"`
-	Limit    int       `json:"-"`
-	Offset   int       `json:"-"`
-	Total    int       `json:"-"`
-}
-
-type SessionListResponse struct {
-	Sessions []Session `json:"sessions"`
-	Meta     ListMeta  `json:"_meta"`
-}
-
-// Message is a session message.
-type Message struct {
-	ID        string         `json:"id"`
-	SessionID string         `json:"sessionId"`
-	Role      MessageRole    `json:"role"`
-	Content   string         `json:"content"`
-	Meta      map[string]any `json:"meta"`
-	CreatedAt string         `json:"createdAt"`
-}
-
-// MessageList is a paginated message list.
-type MessageList struct {
-	Messages []Message `json:"messages"`
-	Limit    int       `json:"-"`
-	Offset   int       `json:"-"`
-	Total    int       `json:"-"`
-}
-
-type MessageListResponse struct {
-	Messages []Message `json:"messages"`
-	Meta     ListMeta  `json:"_meta"`
-}
-
-// MessageSearchHit is a message search result.
-type MessageSearchHit struct {
-	ID    string      `json:"id"`
-	Role  MessageRole `json:"role"`
-	Score float64     `json:"score"`
-	Text  string      `json:"text"`
-}
-
-// MessageSearchResults holds message search hits.
-type MessageSearchResults struct {
-	Results []MessageSearchHit `json:"results"`
-}
-
-// Memory is a session memory.
-type Memory struct {
-	ID        string         `json:"id"`
-	SessionID string         `json:"sessionId"`
-	Kind      MemoryKind     `json:"kind"`
-	Content   string         `json:"content"`
-	Meta      map[string]any `json:"meta"`
-	CreatedAt string         `json:"createdAt"`
-	UpdatedAt string         `json:"updatedAt"`
-}
-
-// MemoryList is a paginated memory list.
-type MemoryList struct {
-	Memories []Memory `json:"memories"`
-	Limit    int      `json:"-"`
-	Offset   int      `json:"-"`
-	Total    int      `json:"-"`
-}
-
-type MemoryListResponse struct {
-	Memories []Memory `json:"memories"`
-	Meta     ListMeta `json:"_meta"`
-}
-
-// MemorySearchHit is a memory search result.
-type MemorySearchHit struct {
-	ID    string     `json:"id"`
-	Kind  MemoryKind `json:"kind"`
-	Score float64    `json:"score"`
-	Text  string     `json:"text"`
-}
-
-// MemorySearchResults holds memory search hits.
-type MemorySearchResults struct {
-	Results []MemorySearchHit `json:"results"`
 }
 
 // DocumentSize is a document size value.
@@ -294,12 +166,4 @@ type ListMeta struct {
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
 	Total  int `json:"total"`
-}
-
-type MessageBatchResponse struct {
-	Messages []Message `json:"messages"`
-}
-
-type MemoryBatchResponse struct {
-	Memories []Memory `json:"memories"`
 }
