@@ -75,16 +75,15 @@ func NewBaseClient(opts ...Option) *BaseClient {
 		opt(&cfg)
 	}
 
-	rc := resty.New().
-		SetBaseURL(strings.TrimRight(cfg.baseURL, "/")).
+	var rc *resty.Client
+	if cfg.httpClient != nil {
+		rc = resty.NewWithClient(cfg.httpClient)
+	} else {
+		rc = resty.New()
+	}
+	rc.SetBaseURL(strings.TrimRight(cfg.baseURL, "/")).
 		SetTimeout(cfg.timeout).
 		SetHeader("X-Access-Key", cfg.accessKey)
-	if cfg.httpClient != nil {
-		rc.SetTransport(cfg.httpClient.Transport)
-		if cfg.httpClient.Timeout > 0 {
-			rc.SetTimeout(cfg.httpClient.Timeout)
-		}
-	}
 
 	return &BaseClient{
 		baseURL:     strings.TrimRight(cfg.baseURL, "/"),

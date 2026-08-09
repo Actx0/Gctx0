@@ -11,12 +11,6 @@ go test ./...
 go build ./examples/...
 ```
 
-Tests start a local mock API server automatically. To run against your own local Actx0 server:
-
-```bash
-GCTX0_BASE_URL=http://127.0.0.1:8000 go test ./...
-```
-
 ## Pull requests
 
 1. Open an issue first for larger changes so we can align on scope.

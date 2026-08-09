@@ -49,9 +49,3 @@ _, _ = client.Knowledge.List(context.Background(), 50, 0)
 go test ./...
 go build ./examples/...
 ```
-
-Tests start a local mock API server automatically. To run against your own local Actx0 server:
-
-```bash
-GCTX0_BASE_URL=http://127.0.0.1:8000 go test ./...
-```
