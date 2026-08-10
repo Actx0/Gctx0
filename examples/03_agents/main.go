@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/Actx0/Gctx0"
 	"github.com/Actx0/Gctx0/examples/util"
 )
 
@@ -26,11 +27,12 @@ func main() {
 	defer client.Close()
 	ctx := context.Background()
 
-	created, err := client.Agent.Create(ctx, "Mara assistant", "Answers questions about Mara Ellison from the docs knowledge base.")
+	created, err := client.Agent.Create(ctx, "Mara assistant", "Answers questions about Mara Ellison from the docs knowledge base.", gctx0.AgentWriteOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
 	show("Created", created)
+	fmt.Printf("memoryPipeline=%v\n", created.Configs.MemoryPipeline)
 
 	listed, err := client.Agent.List(ctx, 50, 0)
 	if err != nil {
@@ -39,7 +41,7 @@ func main() {
 	fmt.Printf("\nListed (total=%d)\n", listed.Total)
 	fmt.Println("========================================")
 	for _, agent := range listed.Agents {
-		fmt.Printf("  %s  %s  status=%s\n", agent.ID, agent.Name, agent.Status)
+		fmt.Printf("  %s  %s  status=%s  memoryPipeline=%v\n", agent.ID, agent.Name, agent.Status, agent.Configs.MemoryPipeline)
 	}
 
 	fetched, err := client.Agent.Get(ctx, created.ID)
@@ -48,7 +50,10 @@ func main() {
 	}
 	show("Fetched", fetched)
 
-	updated, err := client.Agent.Update(ctx, created.ID, "Mara assistant v2", "Updated description for the Mara docs agent.")
+	disabled := false
+	updated, err := client.Agent.Update(ctx, created.ID, "Mara assistant v2", "Updated description for the Mara docs agent.", gctx0.AgentWriteOptions{
+		MemoryPipeline: &disabled,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}

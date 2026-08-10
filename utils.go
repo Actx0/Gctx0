@@ -131,3 +131,17 @@ func PromptWriteBody(content string, opts PromptWriteOptions) (map[string]any, e
 	}
 	return body, nil
 }
+
+// AgentWriteBody builds the create/update JSON body for agents.
+func AgentWriteBody(name, description string, opts AgentWriteOptions) map[string]any {
+	body := map[string]any{
+		"name":        name,
+		"description": description,
+	}
+	if opts.MemoryPipeline != nil {
+		body["configs"] = map[string]any{
+			"memoryPipeline": *opts.MemoryPipeline,
+		}
+	}
+	return body
+}

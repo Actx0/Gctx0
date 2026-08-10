@@ -59,7 +59,7 @@ func Bootstrap(ctx context.Context, client *gctx0.Client, agentName, agentDescri
 	if err != nil {
 		return nil, err
 	}
-	agent, err := client.Agent.Create(ctx, agentName, agentDescription)
+	agent, err := client.Agent.Create(ctx, agentName, agentDescription, gctx0.AgentWriteOptions{})
 	if err != nil {
 		return nil, err
 	}

@@ -8,6 +8,11 @@ import (
 	"net/http"
 )
 
+// AgentConfigs holds nested agent configuration.
+type AgentConfigs struct {
+	MemoryPipeline bool `json:"memoryPipeline"`
+}
+
 // Agent is a workspace agent.
 type Agent struct {
 	ID          string            `json:"id"`
@@ -19,6 +24,7 @@ type Agent struct {
 	Handle      string            `json:"handle"`
 	Description string            `json:"description"`
 	Status      string            `json:"status"`
+	Configs     AgentConfigs      `json:"configs"`
 	CreatedAt   string            `json:"createdAt"`
 	UpdatedAt   string            `json:"updatedAt"`
 }
@@ -35,6 +41,11 @@ type AgentList struct {
 type AgentListResponse struct {
 	Agents []Agent  `json:"agents"`
 	Meta   ListMeta `json:"_meta"`
+}
+
+// AgentWriteOptions are optional fields for agent create/update.
+type AgentWriteOptions struct {
+	MemoryPipeline *bool
 }
 
 // Agents is the workspace agent API client.
@@ -83,7 +94,7 @@ func (a *Agents) Get(ctx context.Context, agentID string) (*Agent, error) {
 }
 
 // Create creates an agent.
-func (a *Agents) Create(ctx context.Context, name, description string) (*Agent, error) {
+func (a *Agents) Create(ctx context.Context, name, description string, opts AgentWriteOptions) (*Agent, error) {
 	path, err := a.WorkspacePath("agents")
 	if err != nil {
 		return nil, err
@@ -91,7 +102,7 @@ func (a *Agents) Create(ctx context.Context, name, description string) (*Agent, 
 
 	var agent Agent
 	if err := a.Request(ctx, http.MethodPost, path, RequestOptions{
-		JSON: map[string]string{"name": name, "description": description},
+		JSON: AgentWriteBody(name, description, opts),
 	}, &agent); err != nil {
 		return nil, err
 	}
@@ -100,7 +111,7 @@ func (a *Agents) Create(ctx context.Context, name, description string) (*Agent, 
 }
 
 // Update updates an agent.
-func (a *Agents) Update(ctx context.Context, agentID, name, description string) (*Agent, error) {
+func (a *Agents) Update(ctx context.Context, agentID, name, description string, opts AgentWriteOptions) (*Agent, error) {
 	path, err := a.WorkspacePath("agents", agentID)
 	if err != nil {
 		return nil, err
@@ -108,7 +119,7 @@ func (a *Agents) Update(ctx context.Context, agentID, name, description string) 
 
 	var agent Agent
 	if err := a.Request(ctx, http.MethodPut, path, RequestOptions{
-		JSON: map[string]string{"name": name, "description": description},
+		JSON: AgentWriteBody(name, description, opts),
 	}, &agent); err != nil {
 		return nil, err
 	}

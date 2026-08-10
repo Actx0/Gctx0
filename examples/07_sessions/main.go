@@ -27,7 +27,7 @@ func main() {
 	defer client.Close()
 	ctx := context.Background()
 
-	agent, err := client.Agent.Create(ctx, "Sessions demo bot", "Used only to demonstrate session create/lookup.")
+	agent, err := client.Agent.Create(ctx, "Sessions demo bot", "Used only to demonstrate session create/lookup.", gctx0.AgentWriteOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
