@@ -15,7 +15,7 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-const defaultBaseURL = "https://actx0.com"
+const defaultBaseURL = "https://app.actx0.com"
 
 // Option configures a client.
 type Option func(*config)

@@ -36,7 +36,7 @@ func NewTestClient(t *testing.T, httpClient *http.Client) *Client {
 func TestUnitHealth(t *testing.T) {
 	t.Run("returns health payload", func(t *testing.T) {
 		httpClient := NewTestHTTPClient(t)
-		httpmock.RegisterResponder(http.MethodGet, "https://example.test/api/v1/_health",
+		httpmock.RegisterResponder(http.MethodGet, "https://example.test/api/v1/public/_health",
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{"status": "ok"}))
 
 		client := NewTestClient(t, httpClient)
@@ -48,7 +48,7 @@ func TestUnitHealth(t *testing.T) {
 
 	t.Run("maps api errors", func(t *testing.T) {
 		httpClient := NewTestHTTPClient(t)
-		httpmock.RegisterResponder(http.MethodGet, "https://example.test/api/v1/_health",
+		httpmock.RegisterResponder(http.MethodGet, "https://example.test/api/v1/public/_health",
 			httpmock.NewJsonResponderOrPanic(503, map[string]any{"errorMessage": "unavailable"}))
 
 		client := NewTestClient(t, httpClient)
@@ -75,7 +75,7 @@ func TestUnitMe(t *testing.T) {
 		httpClient := NewTestHTTPClient(t)
 		httpmock.RegisterResponder(http.MethodGet, "https://example.test/api/v1/me",
 			httpmock.NewJsonResponderOrPanic(200, map[string]any{
-				"principalType": "access_key",
+				"principalType": "ACCESS_KEY",
 				"accessKey": map[string]any{
 					"id":          "wkey_1",
 					"workspaceId": "ws_test",
@@ -87,7 +87,7 @@ func TestUnitMe(t *testing.T) {
 		client := NewTestClient(t, httpClient)
 		got, err := client.Me.Get(context.Background())
 		require.NoError(t, err)
-		assert.Equal(t, "access_key", got.PrincipalType)
+		assert.Equal(t, "ACCESS_KEY", got.PrincipalType)
 		assert.Equal(t, "ws_test", got.AccessKey.WorkspaceID)
 		assert.Equal(t, "Agent runtime", got.AccessKey.Name)
 	})

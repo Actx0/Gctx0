@@ -19,7 +19,7 @@ import (
 const (
 	AccessKey   = "227fc70d-151c-4a7f-85e2-20ef147cbcc1"
 	WorkspaceID = "adae803a-5b20-41c7-bd9b-304792bccabe"
-	BaseURL     = "https://actx0.com"
+	BaseURL     = "https://app.actx0.com"
 
 	OpenRouterURL = "https://openrouter.ai/api/v1/chat/completions"
 	DefaultModel  = "anthropic/claude-sonnet-4.6"
